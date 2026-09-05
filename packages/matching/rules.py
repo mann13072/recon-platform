@@ -79,10 +79,17 @@ _FIELD_ACCESSORS: dict[str, str] = {
     "customer_id": "customer_id",
     "vendor_id": "vendor_id",
     "source_account_id": "source_account_id",
+    # Naming a specific date concept is strict: a rule that says
+    # ``transaction_date`` means that field and nothing else (spec section 84).
     "transaction_date": "transaction_date",
     "posting_date": "posting_date",
     "value_date": "value_date",
     "settlement_date": "settlement_date",
+    # ``date`` is the effective date: transaction, else posting, else value.
+    # Most rules want this, because a ledger export commonly carries only a
+    # posting date and a bank export only a transaction date. A rule demanding
+    # ``transaction_date`` from both sides would never fire on that pairing.
+    "date": "best_date",
 }
 
 

@@ -12,6 +12,7 @@ from typing import Any
 from uuid import UUID
 
 from packages.audit.events import AuditEvent
+from packages.domain.dates import ensure_utc
 from packages.domain.enums import (
     ActorType,
     AuditAction,
@@ -320,10 +321,17 @@ def audit_event_to_row(event: AuditEvent, sequence: int) -> AuditEventRow:
 
 
 def row_to_audit_event(row: AuditEventRow) -> AuditEvent:
+    """Rebuild an event from its row.
+
+    ``occurred_at`` is forced back to UTC because SQLite has no timezone type
+    and returns a naive datetime. The event hash covers the ISO timestamp, so a
+    dropped offset would break the chain on read even though nothing was
+    tampered with.
+    """
     return AuditEvent(
         event_id=row.event_id,
         tenant_id=row.tenant_id,
-        occurred_at=row.occurred_at,
+        occurred_at=ensure_utc(row.occurred_at),
         actor_type=ActorType(row.actor_type),
         actor_id=row.actor_id,
         actor_label=row.actor_label,

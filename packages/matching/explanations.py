@@ -233,12 +233,32 @@ def build_warnings(
     if _identifiers_disagree(
         a.normalized_reference, b.normalized_reference, features.reference_exact
     ):
+        # A reference disagreement is only a *hard* conflict when nothing
+        # stronger has already agreed. Systems routinely put different things in
+        # a "reference" field - a bank puts the payment reference, a ledger puts
+        # a memo - so when the invoice or external ID matches exactly, the
+        # differing references are two conventions, not a contradiction.
+        corroborated = (
+            features.invoice_exact
+            or features.external_id_exact
+            or features.settlement_exact
+        )
         warnings.append(
             MatchWarning(
-                code="CONFLICT_REFERENCE_DISAGREES",
+                code=(
+                    "REFERENCE_DIFFERS"
+                    if corroborated
+                    else "CONFLICT_REFERENCE_DISAGREES"
+                ),
                 description=(
-                    f"Both records carry a reference and they differ: "
+                    f"The records carry different references: "
                     f"{a.reference} vs {b.reference}."
+                    + (
+                        " A stronger identifier matched exactly, so this is "
+                        "reported rather than treated as a contradiction."
+                        if corroborated
+                        else ""
+                    )
                 ),
             )
         )
@@ -317,8 +337,18 @@ def build_warnings(
 
 
 def _identifiers_disagree(left: str | None, right: str | None, matched: bool) -> bool:
-    """Both sides carry the identifier, and they are not the same.
+    """Both sides carry an identifier-shaped value, and the two differ.
 
-    Two missing identifiers are silence, not disagreement.
+    Two missing values are silence, not disagreement. Free text is also not
+    disagreement: a ledger memo reading "Customer payment Acme" does not
+    contradict a bank reference of "INV-4930", it simply is not an identifier.
+    Requiring a digit is a crude test but a reliable one - every reference,
+    invoice number and transaction ID encountered in practice contains one.
     """
-    return bool(left and right and not matched and left != right)
+    if not (left and right) or matched or left == right:
+        return False
+    return _looks_like_identifier(left) and _looks_like_identifier(right)
+
+
+def _looks_like_identifier(value: str) -> bool:
+    return any(character.isdigit() for character in value)

@@ -128,7 +128,7 @@ BANK_GL_RULES: tuple[MatchingRule, ...] = (
                 code="INVOICE_EXACT",
             ),
             RuleCondition(
-                field="transaction_date",
+                field="date",
                 operator=ConditionOperator.WITHIN_DAYS,
                 value=3,
                 weight=10.0,
@@ -159,7 +159,7 @@ BANK_GL_RULES: tuple[MatchingRule, ...] = (
                 code="AMOUNT_WITHIN_TOLERANCE",
             ),
             RuleCondition(
-                field="transaction_date",
+                field="date",
                 operator=ConditionOperator.WITHIN_DAYS,
                 value=3,
                 weight=20.0,

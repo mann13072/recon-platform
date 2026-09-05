@@ -96,6 +96,19 @@ class TenantScopedRepository:
 # ---------------------------------------------------------------------------
 
 
+def _effective_date() -> Any:
+    """The SQL equivalent of ``CanonicalTransaction.best_date``.
+
+    Transaction date, else posting date, else value date. Kept as one function
+    so the SQL and the Python definitions cannot drift apart.
+    """
+    return func.coalesce(
+        TransactionRow.transaction_date,
+        TransactionRow.posting_date,
+        TransactionRow.value_date,
+    )
+
+
 @dataclass(slots=True)
 class TransactionRepository(TenantScopedRepository):
     def get(self, transaction_id: UUID) -> CanonicalTransaction | None:
@@ -133,10 +146,14 @@ class TransactionRepository(TenantScopedRepository):
             statement = statement.where(TransactionRow.source_system == source_system)
         if currency:
             statement = statement.where(TransactionRow.currency == currency.upper())
+        # A period filter must use whichever date the record actually carries.
+        # Filtering on transaction_date alone silently drops ledger exports that
+        # only supply a posting date, which would leave a whole side of the
+        # reconciliation empty without saying why.
         if date_from is not None:
-            statement = statement.where(TransactionRow.transaction_date >= date_from)
+            statement = statement.where(_effective_date() >= date_from)
         if date_to is not None:
-            statement = statement.where(TransactionRow.transaction_date <= date_to)
+            statement = statement.where(_effective_date() <= date_to)
         if search:
             pattern = f"%{search.upper()}%"
             statement = statement.where(
@@ -146,7 +163,7 @@ class TransactionRepository(TenantScopedRepository):
             )
         # A stable secondary sort so paging cannot repeat or skip a row.
         statement = statement.order_by(
-            TransactionRow.transaction_date.desc().nulls_last(), TransactionRow.id
+            _effective_date().desc(), TransactionRow.id
         ).limit(limit).offset(offset)
         return [row_to_transaction(row) for row in self.session.execute(statement).scalars()]
 
