@@ -1,0 +1,65 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "False automatic match rate",
+      "description": "Primary quality guardrail for automation.",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "false_automatic_match_rate", "legendFormat": "False-match rate", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "color": { "mode": "continuous-GrYlRd" } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Audit chain verified",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "min(audit_chain_verified)", "legendFormat": "Verified", "refId": "A" }],
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "BROKEN", "color": "red" }, "1": { "text": "VERIFIED", "color": "green" } } }] }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Connector success rate",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [{ "expr": "connector_sync_success_rate", "legendFormat": "{{connector}}", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Exception aging and material unmatched items",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "exception_aging", "legendFormat": "Oldest exception (days)", "refId": "A" },
+        { "expr": "high_value_unmatched_count", "legendFormat": "Material unmatched", "refId": "B" }
+      ],
+      "fieldConfig": { "defaults": { "min": 0 }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 8 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Platform integrity signals",
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        { "expr": "candidate_explosion_count", "legendFormat": "Candidate explosions", "refId": "A" },
+        { "expr": "ai_schema_validation_failure", "legendFormat": "AI schema failures", "refId": "B" },
+        { "expr": "reopened_reconciliations", "legendFormat": "Reopened reconciliations", "refId": "C" }
+      ],
+      "fieldConfig": { "defaults": { "min": 0 }, "overrides": [] },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 8 }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "tags": ["reconciliation", "controls"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Reconciliation Platform — Controls",
+  "uid": "recon-controls",
+  "version": 1
+}

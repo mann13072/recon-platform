@@ -125,10 +125,32 @@ jobs:
       - name: Verify all 26 specification checks
         run: python scripts/verify_build_checklist.py
 
+  infrastructure:
+    name: Infrastructure and generated monitoring
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+      - name: Verify generated alert rules
+        run: |
+          python scripts/generate_monitoring_config.py
+          git diff --exit-code -- infra/monitoring/alerts.yml
+      - name: Check Terraform formatting
+        run: terraform -chdir=infra/terraform fmt -check -recursive
+      - name: Initialize Terraform providers
+        run: terraform -chdir=infra/terraform init -backend=false -input=false
+      - name: Validate Terraform
+        run: terraform -chdir=infra/terraform validate
+
   immutable-image:
     name: Build immutable image
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [pr-checks, build-checklist]
+    needs: [pr-checks, build-checklist, infrastructure]
     runs-on: ubuntu-latest
     permissions:
       contents: read

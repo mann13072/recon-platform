@@ -10,9 +10,9 @@ Python should still be able to review them.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Literal
 
 __all__ = ["ALERT_RULES", "AlertRule", "Severity", "evaluate"]
 
@@ -33,11 +33,16 @@ class AlertRule:
     name: str
     metric: str
     severity: Severity
-    predicate: Callable[[float], bool]
+    operator: Literal["gt", "lt"]
+    threshold: float
     threshold_description: str
     question: str
     first_action: str
     runbook: str = ""
+
+    def predicate(self, value: float) -> bool:
+        """Evaluate the declared threshold without hiding it in a lambda."""
+        return value > self.threshold if self.operator == "gt" else value < self.threshold
 
 
 ALERT_RULES: tuple[AlertRule, ...] = (
@@ -45,7 +50,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="false_automatic_matches",
         metric="false_automatic_match_rate",
         severity=Severity.PAGE,
-        predicate=lambda value: value > 0.0,
+        operator="gt",
+        threshold=0.0,
         threshold_description="any confirmed false automatic match",
         question="Has the platform automatically matched something incorrectly?",
         first_action=(
@@ -59,7 +65,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="audit_chain_broken",
         metric="audit_chain_verified",
         severity=Severity.PAGE,
-        predicate=lambda value: value < 1.0,
+        operator="lt",
+        threshold=1.0,
         threshold_description="audit chain verification failed for any tenant",
         question="Has anyone altered a historical audit event?",
         first_action="Follow the security incident runbook. Do not deploy.",
@@ -69,7 +76,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="candidate_explosion",
         metric="candidate_explosion_count",
         severity=Severity.TICKET,
-        predicate=lambda value: value > 0,
+        operator="gt",
+        threshold=0.0,
         threshold_description="any run exceeding the expected candidates per row",
         question="Has a blocking key stopped discriminating?",
         first_action=(
@@ -82,7 +90,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="connector_unhealthy",
         metric="connector_sync_success_rate",
         severity=Severity.TICKET,
-        predicate=lambda value: value < 0.9,
+        operator="lt",
+        threshold=0.9,
         threshold_description="under 90% of syncs succeeding",
         question="Is a reconciliation about to run on stale data?",
         first_action=(
@@ -94,7 +103,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="ai_schema_failures",
         metric="ai_schema_validation_failure",
         severity=Severity.TICKET,
-        predicate=lambda value: value > 10,
+        operator="gt",
+        threshold=10.0,
         threshold_description="more than 10 rejected AI responses in a window",
         question="Has a model or prompt version started returning invalid output?",
         first_action=(
@@ -106,7 +116,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="high_value_unmatched",
         metric="high_value_unmatched_count",
         severity=Severity.REVIEW,
-        predicate=lambda value: value > 0,
+        operator="gt",
+        threshold=0.0,
         threshold_description="any unmatched item at or above materiality",
         question="Is material money unaccounted for?",
         first_action="Route to the controller who owns the reconciliation.",
@@ -115,7 +126,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="exception_backlog",
         metric="exception_aging",
         severity=Severity.REVIEW,
-        predicate=lambda value: value > 30,
+        operator="gt",
+        threshold=30.0,
         threshold_description="an open exception older than 30 days",
         question="Is the exception queue being worked?",
         first_action="Escalate to the controller and check owner assignment.",
@@ -124,7 +136,8 @@ ALERT_RULES: tuple[AlertRule, ...] = (
         name="reopened_reconciliations",
         metric="reopened_reconciliations",
         severity=Severity.REVIEW,
-        predicate=lambda value: value > 0,
+        operator="gt",
+        threshold=0.0,
         threshold_description="any reconciliation reopened after closing",
         question="Was something signed off that should not have been?",
         first_action=(

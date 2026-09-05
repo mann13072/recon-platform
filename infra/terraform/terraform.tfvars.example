@@ -1,0 +1,5 @@
+environment     = "staging"
+aws_region      = "eu-central-1"
+certificate_arn = "arn:aws:acm:eu-central-1:123456789012:certificate/replace-me"
+api_image       = "123456789012.dkr.ecr.eu-central-1.amazonaws.com/recon-api@sha256:replace-me"
+web_image       = "123456789012.dkr.ecr.eu-central-1.amazonaws.com/recon-web@sha256:replace-me"
