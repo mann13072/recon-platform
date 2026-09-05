@@ -6,6 +6,10 @@
 **Repository root:** `C:\Users\13072\Desktop\Finance\AI reconciliation Software`
 **Source specification:** `C:\Users\13072\Downloads\AI_RECONCILIATION_PLATFORM_BUILD_SPEC.md` (4090 lines, 110 sections)
 
+**Completion status:** All six implementation tasks in this handover were completed and
+verified on 2026-09-05. Sections 5 and 7 remain as the durable implementation record and
+verification contract; they are no longer a queue of unfinished work.
+
 ---
 
 ## 0. READ THIS FIRST — how to use this document
@@ -17,11 +21,11 @@ things you must NOT do.
 **Before you write a single line of code:**
 
 1. Run `cd "C:\Users\13072\Desktop\Finance\AI reconciliation Software"`
-2. Run `python -m pytest tests -q --basetemp=./.pytest-tmp` — you MUST see `312 passed`.
+2. Run `python -m pytest tests -q --basetemp=./.pytest-tmp` — you MUST see `332 passed`.
    Then `rm -rf ./.pytest-tmp`.
    **Read the note on `--basetemp` below before running this any other way.**
 3. Run `python scripts/verify_build_checklist.py` — you MUST see `26/26 checklist items pass`.
-4. Run `git rev-list --count HEAD` — you MUST see `9`. Run `git branch --show-current` —
+4. Run `git rev-list --count HEAD` — you MUST see `17`. Run `git branch --show-current` —
    you MUST see `main`.
 5. Read `README.md` and then Section 3 of this document (Locked Decisions).
 
@@ -32,10 +36,10 @@ fixture, and it contains **exactly 8 tests**. If your environment denies write a
 the system temp directory, those 8 tests report as **errors**, and you will see:
 
 ```
-304 passed, 8 errors
+324 passed, 8 errors
 ```
 
-**That is an environment problem, not an application failure.** 304 + 8 = 312. Confirm it
+**That is an environment problem, not an application failure.** 324 + 8 = 332. Confirm it
 is the temp directory and not something real by running the suite with a temp directory
 inside the repository:
 
@@ -44,7 +48,7 @@ python -m pytest tests -q --basetemp=./.pytest-tmp
 rm -rf ./.pytest-tmp
 ```
 
-If that shows `312 passed`, the baseline is correct and you may proceed. If it shows any
+If that shows `332 passed`, the baseline is correct and you may proceed. If it shows any
 failure, stop and report it — that would be a genuine regression.
 
 ### If the baseline still does not match
@@ -82,7 +86,7 @@ All of the following is implemented, tested, and committed. **Do not rewrite any
 
 | Fact | Value | How it was verified |
 | --- | --- | --- |
-| Test suite | **312 passing, 0 failing** | `python -m pytest tests -q --basetemp=./.pytest-tmp` |
+| Test suite | **332 passing, 0 failing** | `python -m pytest tests -q --basetemp=./.pytest-tmp` |
 | Build checklist (spec §109) | **26 / 26 items pass** | `python scripts/verify_build_checklist.py` |
 | API endpoints implemented | **45** | `app.openapi()["paths"]` |
 | Database tables | **25** | `Base.metadata.tables` |
@@ -110,16 +114,24 @@ All of the following is implemented, tested, and committed. **Do not rewrite any
 | `scripts/` | DONE | `seed_demo.py`, `benchmark_matching.py`, `verify_build_checklist.py`, `generate_fixture.py`, `replay_reconciliation.py` |
 | `tests/` | DONE | 12 test files, 312 tests |
 | `docs/runbooks/` | DONE | 4 runbooks |
-| **`migrations/`** | **EMPTY — YOUR TASK 1** | |
-| **`docs/*.md` (7 files)** | **MISSING — YOUR TASK 2** | |
-| **`.github/workflows/`** | **MISSING — YOUR TASK 3** | |
-| **`tests/security/`, `tests/performance/`** | **EMPTY — YOUR TASK 4** | |
-| **`apps/web/`** | **EMPTY — YOUR TASK 5** | |
-| **`infra/terraform/`, `infra/monitoring/`, `infra/kubernetes/`** | **EMPTY — YOUR TASK 6 (LOWEST PRIORITY)** | |
+| `migrations/` | DONE | Alembic environment and reversible 25-table initial schema |
+| `docs/*.md` | DONE | Architecture, accounting, matching, security, controls, connectors, and API |
+| `.github/workflows/` | DONE | Quality, security, image, infrastructure, staging, and production gates |
+| `tests/security/`, `tests/performance/` | DONE | Security boundaries and bounded performance regressions |
+| `apps/web/` | DONE | Strict Next.js control room using the real API and exact decimal strings |
+| `infra/terraform/`, `infra/monitoring/` | DONE | Validated AWS stack and generated Prometheus/Grafana monitoring |
+| `infra/kubernetes/` | DEFERRED BY SPEC | Spec §5 marks Kubernetes as later; no implementation was requested |
 
-### 2.3 Git history (9 commits, branch `main`)
+### 2.3 Implementation history through Task 6 (16 commits, branch `main`)
 
 ```
+fc7ba06 Provision production infrastructure and monitoring
+9802e6b Build reconciliation control room frontend
+5b93878 Add security and performance regression suites
+6db8a2c Add CI pipeline and satisfy static quality gates
+5809609 Document architecture, controls, connectors and API
+7223b38 Add initial Alembic schema migration
+bfc57b7 Correct the handover baseline and rename master to main
 3ff6cdd Add HANDOVER.md for the next engineer
 13bbb51 Observability, Celery workers, seed and replay scripts
 4f4c32a Connectors, golden accounting cases, benchmark and the build checklist
@@ -183,14 +195,14 @@ zero. It becomes a real number only when human review feedback is collected over
 
 ---
 
-## 5. YOUR TASKS — in priority order
+## 5. COMPLETED TASK RECORD — original priority order
 
-Do them **in this order**. Each task has: exact files to create, exact content
-requirements, and an exact verification command that must pass before you move on.
+All tasks below are complete. Their requirements and verification commands are retained
+so future changes can be reviewed against the original acceptance contract.
 
 ---
 
-### TASK 1 — Alembic migrations (HIGHEST PRIORITY)
+### TASK 1 — Alembic migrations — COMPLETE (`7223b38`)
 
 **Why first:** `make migrate` is in the Makefile and currently fails. `docker-compose.yml`
 starts PostgreSQL but nothing creates the schema there. Without this the platform cannot
@@ -279,7 +291,7 @@ migration easier. The models are correct; the migration must match them.
 
 ---
 
-### TASK 2 — The seven missing docs
+### TASK 2 — The seven missing docs — COMPLETE (`5809609`)
 
 **Why:** spec §5 names them explicitly. `docs/runbooks/` (4 files) is already DONE.
 
@@ -333,7 +345,7 @@ checkable against a file. If you are unsure, read the file.
 
 ---
 
-### TASK 3 — CI pipeline
+### TASK 3 — CI pipeline — COMPLETE (`6db8a2c`)
 
 **Why:** spec §81 specifies it exactly.
 
@@ -388,7 +400,7 @@ print('workflow parses')
 
 ---
 
-### TASK 4 — Fill `tests/security/` and `tests/performance/`
+### TASK 4 — Security and performance suites — COMPLETE (`5b93878`)
 
 **Why:** spec §49 names both directories. Both currently contain only `__init__.py`.
 
@@ -443,11 +455,11 @@ a real vulnerability — fix the code and say so explicitly in your report.
 
 ---
 
-### TASK 5 — The frontend (`apps/web/`)
+### TASK 5 — The frontend (`apps/web/`) — COMPLETE (`9802e6b`)
 
 **Why:** spec §4 and §5 specify Next.js + TypeScript + React. Currently completely empty.
 
-**This is the largest remaining task. Budget accordingly.**
+This was the largest implementation task.
 
 **Stack (LOCKED by spec §4 — do not substitute):**
 - Next.js (App Router) + TypeScript in **strict** mode
@@ -549,7 +561,7 @@ A frontend built against mocks will not match the real response shapes.
 
 ---
 
-### TASK 6 — Infrastructure (LOWEST PRIORITY — only if time remains)
+### TASK 6 — Infrastructure — COMPLETE (`fc7ba06`)
 
 **Files:**
 - `infra/terraform/` — VPC, RDS PostgreSQL (encrypted, automated backups), ElastiCache
