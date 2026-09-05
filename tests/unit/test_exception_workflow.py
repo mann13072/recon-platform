@@ -112,9 +112,7 @@ class TestStateMachine:
     def test_illegal_jumps_are_refused(self) -> None:
         workflow = ExceptionWorkflow()
         with pytest.raises(IllegalTransition, match="Legal next states"):
-            workflow.transition(
-                exception(), ExceptionStatus.CLOSED, user(Role.CONTROLLER)
-            )
+            workflow.transition(exception(), ExceptionStatus.CLOSED, user(Role.CONTROLLER))
 
     def test_ai_cannot_close_an_exception(self) -> None:
         """Spec section 31: AI may not transition an exception to CLOSED."""
@@ -128,15 +126,11 @@ class TestStateMachine:
         workflow = ExceptionWorkflow()
         proposed = exception(ExceptionStatus.PROPOSED_RESOLUTION)
         with pytest.raises(IllegalTransition) as exc:
-            workflow.transition(
-                proposed, ExceptionStatus.RESOLVED, ai_actor(), resolution_code="X"
-            )
+            workflow.transition(proposed, ExceptionStatus.RESOLVED, ai_actor(), resolution_code="X")
         assert exc.value.code == "HUMAN_REQUIRED"
 
     def test_can_transition_agrees_with_the_workflow(self) -> None:
-        assert can_transition(
-            ExceptionStatus.RESOLVED, ExceptionStatus.CLOSED, ActorType.USER
-        )
+        assert can_transition(ExceptionStatus.RESOLVED, ExceptionStatus.CLOSED, ActorType.USER)
         assert not can_transition(
             ExceptionStatus.RESOLVED, ExceptionStatus.CLOSED, ActorType.AI_ASSISTANT
         )
@@ -207,9 +201,7 @@ class TestStateMachine:
         from packages.controls import PermissionDenied
 
         with pytest.raises(PermissionDenied):
-            ExceptionWorkflow().transition(
-                exception(), ExceptionStatus.TRIAGED, user(Role.VIEWER)
-            )
+            ExceptionWorkflow().transition(exception(), ExceptionStatus.TRIAGED, user(Role.VIEWER))
 
 
 class TestAging:
@@ -249,19 +241,15 @@ class TestEscalation:
         )
         codes = {t.code for t in triggers}
         assert "CRITICAL_AGE" in codes
-        assert "OVERDUE" not in codes or True  # due date is 7 days out
+        assert "OVERDUE" not in codes  # due date is 7 days out
 
     def test_high_exposure_escalates_regardless_of_age(self) -> None:
-        triggers = evaluate_escalation(
-            exception(exposure="250000.00"), EscalationPolicy()
-        )
+        triggers = evaluate_escalation(exception(exposure="250000.00"), EscalationPolicy())
         assert any(t.code == "HIGH_EXPOSURE" for t in triggers)
 
     def test_a_closed_exception_never_escalates(self) -> None:
         assert (
-            evaluate_escalation(
-                exception(ExceptionStatus.CLOSED, age_days=400), EscalationPolicy()
-            )
+            evaluate_escalation(exception(ExceptionStatus.CLOSED, age_days=400), EscalationPolicy())
             == []
         )
 
@@ -269,9 +257,7 @@ class TestEscalation:
 class TestAuditChain:
     def test_events_are_hash_chained(self) -> None:
         log = InMemoryAuditLog()
-        context = AuditContext(
-            tenant_id=TENANT, actor_type=ActorType.USER, actor_id=ALICE
-        )
+        context = AuditContext(tenant_id=TENANT, actor_type=ActorType.USER, actor_id=ALICE)
 
         first = log.record(context, AuditAction.MATCH_APPROVED, "MATCH_GROUP", uuid4())
         second = log.record(context, AuditAction.RUN_CLOSED, "RUN", uuid4())

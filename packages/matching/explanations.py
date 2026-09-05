@@ -39,8 +39,7 @@ REASON_CATALOGUE: dict[str, tuple[float, str]] = {
     "AMOUNT_EXACT": (0.35, "Amounts are exactly equal: {currency} {amount}."),
     "NET_AMOUNT_EXACT": (
         0.30,
-        "The {currency} {amount} deposit equals the counterparty record's net "
-        "amount after fees.",
+        "The {currency} {amount} deposit equals the counterparty record's net amount after fees.",
     ),
     "AMOUNT_WITHIN_TOLERANCE": (
         0.10,
@@ -101,9 +100,7 @@ def build_reasons(
             description = template.format(**params)
         except (KeyError, IndexError, ValueError):  # pragma: no cover - defensive
             description = template
-        emitted[code] = MatchReason(
-            code=code, contribution=contribution, description=description
-        )
+        emitted[code] = MatchReason(code=code, contribution=contribution, description=description)
 
     # -- evidence the features observed ------------------------------------
     if features.external_id_exact:
@@ -194,9 +191,7 @@ def _params(
             b.external_transaction_id if b else None,
         ),
         "reference": pick(a.reference if a else None, b.reference if b else None),
-        "invoice": pick(
-            a.invoice_number if a else None, b.invoice_number if b else None
-        ),
+        "invoice": pick(a.invoice_number if a else None, b.invoice_number if b else None),
         "counterparty": pick(
             a.normalized_counterparty if a else None,
             b.normalized_counterparty if b else None,
@@ -247,17 +242,11 @@ def build_warnings(
         # a memo - so when the invoice or external ID matches exactly, the
         # differing references are two conventions, not a contradiction.
         corroborated = (
-            features.invoice_exact
-            or features.external_id_exact
-            or features.settlement_exact
+            features.invoice_exact or features.external_id_exact or features.settlement_exact
         )
         warnings.append(
             MatchWarning(
-                code=(
-                    "REFERENCE_DIFFERS"
-                    if corroborated
-                    else "CONFLICT_REFERENCE_DISAGREES"
-                ),
+                code=("REFERENCE_DIFFERS" if corroborated else "CONFLICT_REFERENCE_DISAGREES"),
                 description=(
                     f"The records carry different references: "
                     f"{a.reference} vs {b.reference}."
@@ -284,11 +273,7 @@ def build_warnings(
             )
         )
 
-    if (
-        a.external_transaction_id
-        and b.external_transaction_id
-        and not features.external_id_exact
-    ):
+    if a.external_transaction_id and b.external_transaction_id and not features.external_id_exact:
         warnings.append(
             MatchWarning(
                 code="CONFLICT_EXTERNAL_ID_DISAGREES",

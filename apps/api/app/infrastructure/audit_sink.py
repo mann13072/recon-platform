@@ -87,9 +87,12 @@ class DatabaseAuditLog(AuditLog):
             .order_by(AuditEventRow.sequence.desc())
             .limit(1)
         )
-        if for_update and self.session.bind is not None:
-            # SQLite has no row locks; it serialises writes anyway. On
-            # PostgreSQL this is what stops two writers claiming one sequence.
-            if self.session.bind.dialect.name != "sqlite":
-                statement = statement.with_for_update()
+        # SQLite has no row locks; it serialises writes anyway. On PostgreSQL
+        # this is what stops two writers claiming one sequence.
+        if (
+            for_update
+            and self.session.bind is not None
+            and self.session.bind.dialect.name != "sqlite"
+        ):
+            statement = statement.with_for_update()
         return self.session.execute(statement).scalar_one_or_none()

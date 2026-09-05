@@ -19,8 +19,8 @@ from apps.api.app.api.schemas import (
 from apps.api.app.dependencies import Context, require_permission
 from apps.api.app.infrastructure.repositories import ConcurrencyConflict
 from apps.api.app.services.review import ReviewError, ReviewService
-from packages.controls.permissions import Permission, PermissionDenied
 from packages.controls.period_lock import PeriodLocked
+from packages.controls.permissions import Permission, PermissionDenied
 from packages.controls.segregation_of_duties import SoDViolation
 from packages.domain.models.matching import MatchGroup
 
@@ -55,9 +55,7 @@ def to_match_response(group: MatchGroup) -> MatchResponse:
             for m in group.members
         ],
         reasons=[
-            MatchReasonResponse(
-                code=r.code, contribution=r.contribution, description=r.description
-            )
+            MatchReasonResponse(code=r.code, contribution=r.contribution, description=r.description)
             for r in group.reasons
         ],
         warnings=[{"code": w.code, "description": w.description} for w in group.warnings],

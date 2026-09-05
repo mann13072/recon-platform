@@ -11,9 +11,9 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from packages.observability import registry
 from workers.celery_app import TenantTask, celery_app
 from workers.context import system_context
-from packages.observability import registry
 
 logger = logging.getLogger("recon.worker.ai")
 
@@ -68,9 +68,7 @@ def classify_exceptions(
                 failures += 1
 
         if failures:
-            registry.increment(
-                "ai_schema_validation_failure", failures, tenant=tenant_id
-            )
+            registry.increment("ai_schema_validation_failure", failures, tenant=tenant_id)
 
         return {
             "considered": len(records),

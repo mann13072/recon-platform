@@ -59,9 +59,7 @@ class Money(TypeDecorator[Decimal]):
     def load_dialect_impl(self, dialect: Any) -> Any:
         if dialect.name == "sqlite":
             return dialect.type_descriptor(String(_SQLITE_WIDTH))
-        return dialect.type_descriptor(
-            Numeric(MONEY_PRECISION, MONEY_SCALE, asdecimal=True)
-        )
+        return dialect.type_descriptor(Numeric(MONEY_PRECISION, MONEY_SCALE, asdecimal=True))
 
     def process_bind_param(self, value: Any, dialect: Any) -> Any:
         amount = _coerce(value)

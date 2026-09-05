@@ -77,11 +77,9 @@ def make_group(
     reasons: tuple[MatchReason, ...] | None = None,
 ) -> MatchGroup:
     members = [
-        MatchGroupMember(transaction_id=tx.id, side=Side.A, allocated_amount=tx.amount)
-        for tx in a
+        MatchGroupMember(transaction_id=tx.id, side=Side.A, allocated_amount=tx.amount) for tx in a
     ] + [
-        MatchGroupMember(transaction_id=tx.id, side=Side.B, allocated_amount=tx.amount)
-        for tx in b
+        MatchGroupMember(transaction_id=tx.id, side=Side.B, allocated_amount=tx.amount) for tx in b
     ]
 
     if len(a) == 1 and len(b) == 1:
@@ -223,7 +221,9 @@ def _run_rule_stage(
         require_unique_for_rule = require_unique and rule.risk.require_unique_candidate
 
         # -- pass 1: what does each anchor want? ---------------------------
-        proposals: dict[UUID, tuple[CanonicalTransaction, CanonicalTransaction, ScoredCandidate]] = {}
+        proposals: dict[
+            UUID, tuple[CanonicalTransaction, CanonicalTransaction, ScoredCandidate]
+        ] = {}
         claims: dict[UUID, list[UUID]] = {}
 
         for a in remaining_a:
@@ -276,9 +276,7 @@ def _run_rule_stage(
             claims.setdefault(b.id, []).append(a.id)
 
         # -- pass 2: resolve contention, then consume ----------------------
-        contested_b = {
-            b_id for b_id, anchors in claims.items() if len(anchors) > 1
-        }
+        contested_b = {b_id for b_id, anchors in claims.items() if len(anchors) > 1}
         if contested_b:
             bump(
                 f"{rule.versioned_id}_contested",
@@ -305,14 +303,8 @@ def _run_rule_stage(
                     b=[b],
                     scored=scored,
                     stage=stage,
-                    status=(
-                        MatchGroupStatus.AUTO_APPROVED
-                        if auto
-                        else MatchGroupStatus.SUGGESTED
-                    ),
-                    decision=(
-                        DecisionOutcome.AUTO_MATCH if auto else DecisionOutcome.SUGGEST
-                    ),
+                    status=(MatchGroupStatus.AUTO_APPROVED if auto else MatchGroupStatus.SUGGESTED),
+                    decision=(DecisionOutcome.AUTO_MATCH if auto else DecisionOutcome.SUGGEST),
                     confidence=scored.score,
                 )
             )

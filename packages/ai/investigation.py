@@ -147,22 +147,17 @@ def deterministic_narrative(evidence: InvestigationEvidence) -> str:
             f"{top['currency']} {top['amount']} ({top['status']})."
         )
         lines.append(
-            f"There are {len(evidence.largest_open_exceptions)} open exception(s) "
-            "in the shortlist."
+            f"There are {len(evidence.largest_open_exceptions)} open exception(s) in the shortlist."
         )
     if evidence.possible_fee_items:
         lines.append(
-            f"{len(evidence.possible_fee_items)} item(s) look like fee or rounding "
-            "differences."
+            f"{len(evidence.possible_fee_items)} item(s) look like fee or rounding differences."
         )
     if evidence.aged_items:
-        lines.append(
-            f"{len(evidence.aged_items)} item(s) are aged beyond the threshold."
-        )
+        lines.append(f"{len(evidence.aged_items)} item(s) are aged beyond the threshold.")
     if evidence.unmatched_groups:
         lines.append(
-            f"{len(evidence.unmatched_groups)} suggested match group(s) are still "
-            "awaiting review."
+            f"{len(evidence.unmatched_groups)} suggested match group(s) are still awaiting review."
         )
     return " ".join(lines)
 

@@ -209,9 +209,7 @@ def decide(
         competing_candidate_count=competing,
         confidence=confidence,
         policy_codes=tuple([*blockers, "BELOW_SUGGEST_THRESHOLD"]),
-        explanation=(
-            "The best candidate does not carry enough evidence to suggest a match."
-        ),
+        explanation=("The best candidate does not carry enough evidence to suggest a match."),
     )
 
 

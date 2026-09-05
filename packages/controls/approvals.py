@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -148,9 +147,7 @@ def approve_journal(
     )
 
     if proposal.status != "PROPOSED":
-        raise SoDViolation(
-            "ALREADY_DECIDED", f"This proposal is already {proposal.status}."
-        )
+        raise SoDViolation("ALREADY_DECIDED", f"This proposal is already {proposal.status}.")
 
     return proposal.model_copy(
         update={

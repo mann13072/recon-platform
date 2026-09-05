@@ -28,7 +28,7 @@ from decimal import Decimal
 from typing import Any, Protocol
 from uuid import UUID
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from packages.ai.privacy import (
     AIDisabledError,
@@ -58,7 +58,7 @@ __all__ = [
     "build_provider",
 ]
 
-_SCHEMA_FOR_TASK: dict[str, type] = {
+_SCHEMA_FOR_TASK: dict[str, type[BaseModel]] = {
     "classify_exception": ExceptionClassificationSuggestion,
     "extract_references": ExtractedReferenceSuggestion,
     "resolve_entity": EntityResolutionSuggestion,
@@ -204,7 +204,7 @@ class DeterministicProvider(AIProvider):
         net = _decimal(data.get("net_amount"))
         amount = _decimal(data.get("amount"))
 
-        if None not in (gross, fee, net) and gross - abs(fee) == net:  # type: ignore[operator]
+        if gross is not None and fee is not None and net is not None and gross - abs(fee) == net:
             reasons = ["NET_AMOUNT_MATCH"]
             if data.get("settlement_id"):
                 reasons.append("SETTLEMENT_REFERENCE_MATCH")
@@ -213,13 +213,10 @@ class DeterministicProvider(AIProvider):
                 "confidence": 0.97,
                 "reason_codes": reasons,
                 "human_explanation": (
-                    "The bank deposit equals the processor payout after the "
-                    "reported fee."
+                    "The bank deposit equals the processor payout after the reported fee."
                 ),
                 "cited_fields": ["gross_amount", "fee_amount", "net_amount"],
-                "suggested_resolution": (
-                    "Post the processor fee to the fee expense account."
-                ),
+                "suggested_resolution": ("Post the processor fee to the fee expense account."),
             }
 
         description = str(data.get("description") or "").upper()
@@ -255,9 +252,7 @@ class DeterministicProvider(AIProvider):
             "category": ExceptionCategory.INSUFFICIENT_EVIDENCE.value,
             "confidence": 0.0,
             "reason_codes": ["INSUFFICIENT_EVIDENCE"],
-            "human_explanation": (
-                "The supplied fields do not support any classification."
-            ),
+            "human_explanation": ("The supplied fields do not support any classification."),
             "cited_fields": [],
         }
 
@@ -281,9 +276,7 @@ class DeterministicProvider(AIProvider):
             "proposed_pattern": first.pattern_id,
             "confidence": 0.9,
             "reason_codes": ["PATTERN_MATCH"],
-            "human_explanation": (
-                f"Pattern {first.pattern_id} matched '{first.value}'."
-            ),
+            "human_explanation": (f"Pattern {first.pattern_id} matched '{first.value}'."),
             "cited_fields": ["description"],
         }
 
@@ -319,14 +312,12 @@ class DeterministicProvider(AIProvider):
         fees = data.get("possible_fee_items") or []
 
         points = [
-            f"{len(exceptions)} open exception(s) account for the largest part of "
-            "the difference.",
+            f"{len(exceptions)} open exception(s) account for the largest part of the difference.",
             f"{len(fees)} item(s) look like fee or charge differences.",
         ]
         return {
             "summary": (
-                f"The unexplained difference is {currency} {difference}. "
-                + " ".join(points)
+                f"The unexplained difference is {currency} {difference}. " + " ".join(points)
             ),
             "key_points": points,
             "confidence": 0.6,
@@ -405,9 +396,7 @@ class HTTPProvider(AIProvider):
 
     def _invoke(self, task: str, payload: MinimizedPayload) -> dict[str, Any]:
         user = build_prompt(task, payload.payload)
-        text = self._transport.complete(
-            SYSTEM_PROMPT, user, timeout_ms=self._timeout_ms
-        )
+        text = self._transport.complete(SYSTEM_PROMPT, user, timeout_ms=self._timeout_ms)
         return _parse_json_object(text)
 
 
@@ -468,9 +457,7 @@ def build_provider(
     if provider == "deterministic":
         return DeterministicProvider()
     if transport is None:
-        raise ValueError(
-            f"provider '{provider}' requires a transport; none was configured"
-        )
+        raise ValueError(f"provider '{provider}' requires a transport; none was configured")
     return HTTPProvider(
         transport,
         name=provider,

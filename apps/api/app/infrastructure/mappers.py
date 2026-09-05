@@ -11,6 +11,13 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from apps.api.app.infrastructure.models import (
+    AuditEventRow,
+    ExceptionRow,
+    MatchGroupMemberRow,
+    MatchGroupRow,
+    TransactionRow,
+)
 from packages.audit.events import AuditEvent
 from packages.domain.dates import ensure_utc
 from packages.domain.enums import (
@@ -32,13 +39,6 @@ from packages.domain.models.matching import (
     MatchWarning,
 )
 from packages.domain.models.transaction import CanonicalTransaction
-from apps.api.app.infrastructure.models import (
-    AuditEventRow,
-    ExceptionRow,
-    MatchGroupMemberRow,
-    MatchGroupRow,
-    TransactionRow,
-)
 
 __all__ = [
     "audit_event_to_row",

@@ -81,13 +81,9 @@ def assert_can_approve_match(
     if not maker_checker_required:
         return
 
-    same_person = (
-        principal.user_id is not None and principal.user_id == subject.created_by
-    )
+    same_person = principal.user_id is not None and principal.user_id == subject.created_by
     high_risk = (
-        abs(subject.amount) >= materiality_threshold
-        or subject.is_manual
-        or subject.is_override
+        abs(subject.amount) >= materiality_threshold or subject.is_manual or subject.is_override
     )
 
     if same_person and high_risk:
@@ -98,9 +94,8 @@ def assert_can_approve_match(
             "is high-risk. A second reviewer is required.",
         )
 
-    if (
-        principal.approval_limit is not None
-        and abs(subject.amount) > Decimal(principal.approval_limit)
+    if principal.approval_limit is not None and abs(subject.amount) > Decimal(
+        principal.approval_limit
     ):
         raise SoDViolation(
             "APPROVAL_LIMIT_EXCEEDED",
@@ -124,14 +119,12 @@ def assert_can_approve_journal(
             "The preparer of a journal proposal may never approve it.",
         )
 
-    if (
-        principal.approval_limit is not None
-        and abs(subject.amount) > Decimal(principal.approval_limit)
+    if principal.approval_limit is not None and abs(subject.amount) > Decimal(
+        principal.approval_limit
     ):
         raise SoDViolation(
             "APPROVAL_LIMIT_EXCEEDED",
-            f"{principal.describe()} cannot approve "
-            f"{subject.currency} {abs(subject.amount):,.2f}.",
+            f"{principal.describe()} cannot approve {subject.currency} {abs(subject.amount):,.2f}.",
         )
 
 
@@ -146,8 +139,7 @@ def assert_can_modify_run(principal: Principal, status: ReconciliationStatus) ->
     if (
         Role.INTEGRATION_ADMINISTRATOR in principal.roles
         and len(principal.roles) == 1
-        and status
-        in {ReconciliationStatus.READY_TO_CLOSE, ReconciliationStatus.REVIEW_REQUIRED}
+        and status in {ReconciliationStatus.READY_TO_CLOSE, ReconciliationStatus.REVIEW_REQUIRED}
     ):
         raise SoDViolation(
             "INTEGRATION_ADMIN_SCOPE",
@@ -176,9 +168,7 @@ def assert_can_close_run(
 
     blockers: list[str] = []
     if unresolved_required_exceptions:
-        blockers.append(
-            f"{unresolved_required_exceptions} exception(s) still require resolution"
-        )
+        blockers.append(f"{unresolved_required_exceptions} exception(s) still require resolution")
     if pending_approvals:
         blockers.append(f"{pending_approvals} approval(s) are still pending")
     if abs(unexplained_difference) > max_unexplained_difference:
@@ -189,9 +179,7 @@ def assert_can_close_run(
     if missing_evidence:
         blockers.append(f"{missing_evidence} item(s) are missing required evidence")
     if blocking_quality_errors:
-        blockers.append(
-            f"{blocking_quality_errors} blocking data-quality error(s) are unresolved"
-        )
+        blockers.append(f"{blocking_quality_errors} blocking data-quality error(s) are unresolved")
 
     if blockers:
         raise SoDViolation(

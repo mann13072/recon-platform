@@ -237,9 +237,7 @@ class GroupMatcher:
                 # earlier stages, not here.
                 continue
 
-            amounts = [
-                (str(tx.id), minor_units(tx.amount, currency)) for tx in pool_candidates
-            ]
+            amounts = [(str(tx.id), minor_units(tx.amount, currency)) for tx in pool_candidates]
             search = find_subsets(
                 amounts,
                 minor_units(anchor.amount, currency),
@@ -323,9 +321,8 @@ class GroupMatcher:
                 continue
             if abs(tx.amount) > abs(anchor.amount) + self.config.tolerances.max_amount_difference:
                 continue
-            if anchor_date and tx.best_date:
-                if abs((anchor_date - tx.best_date).days) > window:
-                    continue
+            if anchor_date and tx.best_date and abs((anchor_date - tx.best_date).days) > window:
+                continue
             candidates.append(tx)
 
         # Prefer records that share a batch, settlement or counterparty with the

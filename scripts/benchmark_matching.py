@@ -52,8 +52,16 @@ CONNECTION_A = uuid5(NAMESPACE, "bank")
 CONNECTION_B = uuid5(NAMESPACE, "ledger")
 
 COUNTERPARTIES = [
-    "ACME GMBH", "BETA LTD", "GAMMA BV", "DELTA SARL", "EPSILON AB",
-    "ZETA OY", "ETA AS", "THETA SPA", "IOTA PLC", "KAPPA NV",
+    "ACME GMBH",
+    "BETA LTD",
+    "GAMMA BV",
+    "DELTA SARL",
+    "EPSILON AB",
+    "ZETA OY",
+    "ETA AS",
+    "THETA SPA",
+    "IOTA PLC",
+    "KAPPA NV",
 ]
 
 
@@ -134,13 +142,23 @@ def generate(size: int, *, match_rate: float, seed: int = 7) -> tuple[list, list
     matched_count = int(size * match_rate)
 
     side_a = [
-        make_transaction(i, side="bank", seed_date=seed_date, rng=random.Random(seed + i),
-                         matched=i < matched_count)
+        make_transaction(
+            i,
+            side="bank",
+            seed_date=seed_date,
+            rng=random.Random(seed + i),
+            matched=i < matched_count,
+        )
         for i in range(size)
     ]
     side_b = [
-        make_transaction(i, side="ledger", seed_date=seed_date,
-                         rng=random.Random(seed + i), matched=i < matched_count)
+        make_transaction(
+            i,
+            side="ledger",
+            seed_date=seed_date,
+            rng=random.Random(seed + i),
+            matched=i < matched_count,
+        )
         for i in range(size)
     ]
     # Give the matched pairs identical amounts so the exact rules can fire.
@@ -161,14 +179,12 @@ def run_size(size: int, *, match_rate: float, grouping: bool) -> BenchmarkRow:
     config, rule_set = bank_gl_template()
     config = config.model_copy(
         update={
-            "grouping": GroupingConfig(
-                enabled=grouping, max_group_size=4, max_candidate_pool=40
-            )
+            "grouping": GroupingConfig(enabled=grouping, max_group_size=4, max_candidate_pool=40)
         }
     )
 
     started = time.perf_counter()
-    index = BlockingIndex.build(side_b)
+    BlockingIndex.build(side_b)
     index_seconds = time.perf_counter() - started
 
     generator = CandidateGenerator.for_config(config)

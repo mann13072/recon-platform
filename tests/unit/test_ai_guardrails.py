@@ -61,9 +61,7 @@ class TestDisableSwitch:
             )
 
     def test_null_provider_never_returns_a_suggestion(self) -> None:
-        envelope = NullProvider().classify_exception(
-            TENANT, {"amount": "10.00"}, settings()
-        )
+        envelope = NullProvider().classify_exception(TENANT, {"amount": "10.00"}, settings())
         assert envelope.suggestion is None
         assert not envelope.usable
         assert envelope.call.failure_reason is not None
@@ -117,7 +115,9 @@ class TestDataMinimisation:
     def test_input_hash_is_stable(self) -> None:
         data = {"amount": "10.00", "currency": "EUR"}
         first = prepare_payload("classify_exception", data, settings())
-        second = prepare_payload("classify_exception", dict(reversed(list(data.items()))), settings())
+        second = prepare_payload(
+            "classify_exception", dict(reversed(list(data.items()))), settings()
+        )
         assert first.input_hash == second.input_hash
 
 
@@ -160,9 +160,7 @@ class TestSchemaValidation:
         assert "schema validation failed" in (envelope.call.failure_reason or "")
 
     def test_confidence_outside_zero_to_one_is_rejected(self) -> None:
-        provider = HTTPProvider(
-            _BadTransport('{"category": "PROCESSOR_FEE", "confidence": 4.2}')
-        )
+        provider = HTTPProvider(_BadTransport('{"category": "PROCESSOR_FEE", "confidence": 4.2}'))
         envelope = provider.classify_exception(TENANT, {"amount": "1.00"}, settings())
         assert envelope.suggestion is None
 
@@ -178,19 +176,14 @@ class TestSchemaValidation:
     def test_extra_fields_are_rejected(self) -> None:
         """A response cannot smuggle in fields the schema does not define."""
         provider = HTTPProvider(
-            _BadTransport(
-                '{"category": "PROCESSOR_FEE", "confidence": 0.9, '
-                '"auto_approve": true}'
-            )
+            _BadTransport('{"category": "PROCESSOR_FEE", "confidence": 0.9, "auto_approve": true}')
         )
         envelope = provider.classify_exception(TENANT, {"amount": "1.00"}, settings())
         assert envelope.suggestion is None
 
     def test_fenced_json_is_still_parsed(self) -> None:
         provider = HTTPProvider(
-            _BadTransport(
-                '```json\n{"category": "PROCESSOR_FEE", "confidence": 0.9}\n```'
-            )
+            _BadTransport('```json\n{"category": "PROCESSOR_FEE", "confidence": 0.9}\n```')
         )
         envelope = provider.classify_exception(TENANT, {"amount": "1.00"}, settings())
         assert envelope.usable
@@ -200,9 +193,7 @@ class TestSchemaValidation:
             def complete(self, system: str, user: str, *, timeout_ms: int) -> str:
                 raise TimeoutError("model timed out")
 
-        envelope = HTTPProvider(Broken()).classify_exception(
-            TENANT, {"amount": "1.00"}, settings()
-        )
+        envelope = HTTPProvider(Broken()).classify_exception(TENANT, {"amount": "1.00"}, settings())
         assert envelope.suggestion is None
         assert "TimeoutError" in (envelope.call.failure_reason or "")
 

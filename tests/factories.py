@@ -54,9 +54,7 @@ def make_transaction(
     lets the reproducibility assertions compare result hashes.
     """
     payload = {"source_record_id": source_record_id, "amount": str(amount)}
-    connection = connection_id or (
-        CONNECTION_A if source_system == "bank" else CONNECTION_B
-    )
+    connection = connection_id or (CONNECTION_A if source_system == "bank" else CONNECTION_B)
 
     def _decimal(value: str | Decimal | None) -> Decimal | None:
         return None if value is None else Decimal(str(value))

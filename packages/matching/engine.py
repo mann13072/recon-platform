@@ -48,7 +48,7 @@ from packages.matching.exact import (
     make_group,
 )
 from packages.matching.grouping import GroupMatcher
-from packages.matching.rules import RuleSet
+from packages.matching.rules import MatchingRule, RuleSet
 from packages.matching.scoring import Scorer
 
 __all__ = [
@@ -139,17 +139,14 @@ def assert_invariants(
                     f"groups {previous} and {group.id}"
                 )
             seen[member.transaction_id] = group.id
-            allocated[member.transaction_id] = (
-                allocated.get(member.transaction_id, Decimal("0"))
-                + abs(member.allocated_amount)
-            )
+            allocated[member.transaction_id] = allocated.get(
+                member.transaction_id, Decimal("0")
+            ) + abs(member.allocated_amount)
 
     for transaction_id, total in allocated.items():
         transaction = transactions_by_id.get(transaction_id)
         if transaction is None:
-            raise AssertionError(
-                f"match group references unknown transaction {transaction_id}"
-            )
+            raise AssertionError(f"match group references unknown transaction {transaction_id}")
         if total > abs(transaction.amount):
             raise OverAllocationError(
                 f"transaction {transaction_id} has {total} allocated but its amount "
@@ -250,9 +247,7 @@ class MatchingEngine:
 
         # -- Stage 7: decision policy --------------------------------------
         amounts = {tx.id: tx.amount for tx in remaining_a}
-        decisions = self.policy_engine.decide_all(
-            analyses, contention=contention, amounts=amounts
-        )
+        decisions = self.policy_engine.decide_all(analyses, contention=contention, amounts=amounts)
         result.decisions = decisions
 
         consumed_a: set[UUID] = set()
@@ -283,9 +278,7 @@ class MatchingEngine:
                 b=partners,
                 scored=top,
                 stage="scoring",
-                status=(
-                    MatchGroupStatus.AUTO_APPROVED if auto else MatchGroupStatus.SUGGESTED
-                ),
+                status=(MatchGroupStatus.AUTO_APPROVED if auto else MatchGroupStatus.SUGGESTED),
                 decision=decision.outcome,
                 confidence=decision.confidence,
             )
@@ -312,11 +305,10 @@ class MatchingEngine:
         return result
 
 
-def _scoring_pseudo_rule():  # type: ignore[no-untyped-def]
+def _scoring_pseudo_rule() -> MatchingRule:
     """A rule record for matches produced by the scorer rather than a named rule."""
     from packages.matching.rules import (
         ConditionOperator,
-        MatchingRule,
         RuleCondition,
         RuleDecision,
         RuleRisk,
@@ -328,9 +320,7 @@ def _scoring_pseudo_rule():  # type: ignore[no-untyped-def]
         version="v1",
         deterministic=False,
         stage="scoring",
-        description=(
-            "Weighted deterministic features with ambiguity-aware decision policy."
-        ),
+        description=("Weighted deterministic features with ambiguity-aware decision policy."),
         conditions=(
             RuleCondition(
                 field="amount",

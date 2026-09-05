@@ -42,9 +42,36 @@ _BOOL_VALUES = {"TRUE", "FALSE", "YES", "NO", "Y", "N", "0", "1"}
 # A rough ISO-4217 sanity list. Not exhaustive; used only to raise confidence
 # that a 3-letter column really is a currency column.
 _KNOWN_CURRENCIES = {
-    "AUD", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP", "HKD",
-    "HUF", "IDR", "ILS", "INR", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
-    "PHP", "PLN", "RON", "SEK", "SGD", "THB", "TRY", "USD", "ZAR", "AED",
+    "AUD",
+    "BRL",
+    "CAD",
+    "CHF",
+    "CNY",
+    "CZK",
+    "DKK",
+    "EUR",
+    "GBP",
+    "HKD",
+    "HUF",
+    "IDR",
+    "ILS",
+    "INR",
+    "JPY",
+    "KRW",
+    "MXN",
+    "MYR",
+    "NOK",
+    "NZD",
+    "PHP",
+    "PLN",
+    "RON",
+    "SEK",
+    "SGD",
+    "THB",
+    "TRY",
+    "USD",
+    "ZAR",
+    "AED",
 }
 
 
@@ -125,8 +152,7 @@ def _classify(name: str, values: list[str]) -> tuple[ColumnType, ColumnProfile]:
     except AmbiguousDateFormatError:
         profile.inferred_type = ColumnType.DATE
         profile.warnings.append(
-            "date format is ambiguous between DD/MM/YYYY and MM/DD/YYYY; "
-            "confirm during mapping"
+            "date format is ambiguous between DD/MM/YYYY and MM/DD/YYYY; confirm during mapping"
         )
         return ColumnType.DATE, profile
     except ValueError:
@@ -181,9 +207,7 @@ def profile_table(table: ParsedTable, *, sample_size: int = 500) -> FileProfile:
             profile.duplicate_ratio = repeated / len(non_empty)
 
         if profile.fill_rate < 0.8 and profile.non_empty_count:
-            profile.warnings.append(
-                f"only {profile.fill_rate:.0%} of rows have a value"
-            )
+            profile.warnings.append(f"only {profile.fill_rate:.0%} of rows have a value")
 
         columns.append(profile)
 

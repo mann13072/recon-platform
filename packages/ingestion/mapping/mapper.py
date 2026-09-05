@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal, cast
 from uuid import UUID, uuid4
 
 from packages.domain.dates import parse_date, utc_now
@@ -91,19 +91,27 @@ CANONICAL_FIELDS: dict[str, str] = {
 _HEADER_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("settlement_id", ("SETTLEMENTID", "SETTLEMENT", "BATCHREF")),
     ("payout_id", ("PAYOUTID", "PAYOUT")),
-    ("external_transaction_id", ("TRANSACTIONID", "TXNID", "CHARGEID", "EXTERNALID",
-                                 "PAYMENTID", "SOURCEID")),
+    (
+        "external_transaction_id",
+        ("TRANSACTIONID", "TXNID", "CHARGEID", "EXTERNALID", "PAYMENTID", "SOURCEID"),
+    ),
     ("invoice_number", ("INVOICENUMBER", "INVOICENO", "INVOICE", "INVNO", "BILLNO")),
     ("purchase_order", ("PURCHASEORDER", "PONUMBER", "PONO")),
     ("check_number", ("CHECKNUMBER", "CHEQUENUMBER", "CHECKNO", "CHKNO")),
     ("bank_reference", ("BANKREFERENCE", "BANKREF", "ENDTOEND", "EREF")),
     ("reference", ("REFERENCE", "PAYMENTREFERENCE", "REF", "MEMO", "REMITTANCE")),
-    ("counterparty_account", ("IBAN", "COUNTERPARTYACCOUNT", "BENEFICIARYACCOUNT",
-                              "ACCOUNTNUMBER")),
-    ("counterparty_name", ("COUNTERPARTY", "PAYEE", "PAYER", "BENEFICIARY",
-                           "CUSTOMERNAME", "VENDORNAME", "NAME")),
-    ("description", ("DESCRIPTION", "NARRATIVE", "DETAILS", "PARTICULARS",
-                     "TRANSACTIONDETAILS", "TEXT")),
+    (
+        "counterparty_account",
+        ("IBAN", "COUNTERPARTYACCOUNT", "BENEFICIARYACCOUNT", "ACCOUNTNUMBER"),
+    ),
+    (
+        "counterparty_name",
+        ("COUNTERPARTY", "PAYEE", "PAYER", "BENEFICIARY", "CUSTOMERNAME", "VENDORNAME", "NAME"),
+    ),
+    (
+        "description",
+        ("DESCRIPTION", "NARRATIVE", "DETAILS", "PARTICULARS", "TRANSACTIONDETAILS", "TEXT"),
+    ),
     ("gross_amount", ("GROSSAMOUNT", "GROSS")),
     ("fee_amount", ("FEEAMOUNT", "FEE", "FEES", "CHARGE", "COMMISSION")),
     ("tax_amount", ("TAXAMOUNT", "TAX", "VAT")),
@@ -116,8 +124,10 @@ _HEADER_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("settlement_date", ("SETTLEMENTDATE", "SETTLEDAT")),
     ("value_date", ("VALUEDATE", "VALUTA")),
     ("posting_date", ("POSTINGDATE", "POSTEDDATE", "BOOKINGDATE", "BOOKDATE")),
-    ("transaction_date", ("TRANSACTIONDATE", "DATE", "TXNDATE", "CREATEDAT",
-                          "DATUM", "OPERATIONDATE")),
+    (
+        "transaction_date",
+        ("TRANSACTIONDATE", "DATE", "TXNDATE", "CREATEDAT", "DATUM", "OPERATIONDATE"),
+    ),
     ("status", ("STATUS", "STATE")),
     ("transaction_type", ("TYPE", "TRANSACTIONTYPE", "ENTRYTYPE")),
     ("debit_credit", ("DEBITCREDIT", "DRCR", "DC", "SIGN")),
@@ -175,20 +185,14 @@ class SourceMapping:
         seen: set[str] = set()
         for mapping in self.columns:
             if mapping.canonical_field in seen:
-                raise MappingError(
-                    f"canonical field mapped twice: {mapping.canonical_field}"
-                )
+                raise MappingError(f"canonical field mapped twice: {mapping.canonical_field}")
             seen.add(mapping.canonical_field)
 
         has_amount = "amount" in seen or (self.debit_column and self.credit_column)
         if not has_amount:
-            raise MappingError(
-                "mapping must provide 'amount', or both a debit and a credit column"
-            )
+            raise MappingError("mapping must provide 'amount', or both a debit and a credit column")
         if "currency" not in seen and "currency" not in self.static_values:
-            raise MappingError(
-                "mapping must provide 'currency' as a column or a static value"
-            )
+            raise MappingError("mapping must provide 'currency' as a column or a static value")
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,9 +392,12 @@ def _map_row(
     if not currency:
         raise ValueError("missing currency")
 
-    direction = values.get("debit_credit")
-    if direction not in {"debit", "credit"}:
-        direction = _infer_direction(values.get("debit_credit"), amount)
+    raw_direction = values.get("debit_credit")
+    direction = (
+        cast(Literal["debit", "credit", "unknown"], raw_direction)
+        if raw_direction in {"debit", "credit", "unknown"}
+        else _infer_direction(raw_direction, amount)
+    )
 
     source_record_id = str(values.get("source_record_id") or row_number)
 
@@ -488,7 +495,7 @@ def _map_row(
     return transaction, lineage
 
 
-def _infer_direction(raw: str | None, amount: Decimal) -> str:
+def _infer_direction(raw: str | None, amount: Decimal) -> Literal["debit", "credit", "unknown"]:
     """Interpret an explicit direction column, else fall back to the sign."""
     if raw:
         token = normalize_text(raw) or ""

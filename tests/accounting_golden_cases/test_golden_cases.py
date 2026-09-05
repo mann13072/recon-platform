@@ -20,9 +20,9 @@ from uuid import UUID, uuid5
 import pytest
 import yaml
 
+from packages.domain.dates import parse_date, utc_now
 from packages.domain.models.reconciliation import ReconciliationConfig
 from packages.domain.models.transaction import CanonicalTransaction, compute_checksum
-from packages.domain.dates import parse_date, utc_now
 from packages.ingestion.normalization import (
     normalize_bank_description,
     normalize_invoice_number,
@@ -114,9 +114,7 @@ def load_scenario(name: str) -> dict[str, Any]:
     config = ReconciliationConfig.from_yaml_dict(config_document)
 
     side_b_type = config.side_b.type
-    rule_set = (
-        stripe_payout_template()[1] if side_b_type == "processor" else bank_gl_template()[1]
-    )
+    rule_set = stripe_payout_template()[1] if side_b_type == "processor" else bank_gl_template()[1]
 
     return {
         "name": name,
@@ -124,9 +122,7 @@ def load_scenario(name: str) -> dict[str, Any]:
         "rule_set": rule_set,
         "side_a": load_transactions(directory / "source_a.csv", config.side_a.type),
         "side_b": load_transactions(directory / "source_b.csv", side_b_type),
-        "expected_matches": json.loads(
-            (directory / "expected_matches.json").read_text("utf-8")
-        ),
+        "expected_matches": json.loads((directory / "expected_matches.json").read_text("utf-8")),
         "expected_exceptions": json.loads(
             (directory / "expected_exceptions.json").read_text("utf-8")
         ),
@@ -144,10 +140,7 @@ def run_scenario(scenario: dict[str, Any]) -> Any:
 
 def record_ids(result: Any, scenario: dict[str, Any]) -> dict[UUID, str]:
     del result
-    return {
-        t.id: t.source_record_id
-        for t in (*scenario["side_a"], *scenario["side_b"])
-    }
+    return {t.id: t.source_record_id for t in (*scenario["side_a"], *scenario["side_b"])}
 
 
 @pytest.mark.parametrize("name", scenario_names())
@@ -186,8 +179,7 @@ class TestGoldenCases:
             )
             group = produced[key]
             assert group.cardinality.value == expected["relation"], (
-                f"{name}: expected relation {expected['relation']}, got "
-                f"{group.cardinality.value}"
+                f"{name}: expected relation {expected['relation']}, got {group.cardinality.value}"
             )
             assert group.decision.value == expected["decision"], (
                 f"{name}: expected decision {expected['decision']}, got "
@@ -335,9 +327,7 @@ class TestFixtureCoverage:
         # Both legs must still be visible to a reviewer, one way or another.
         names = record_ids(result, scenario)
         surfaced = {
-            names[member.transaction_id]
-            for group in result.matches
-            for member in group.members
+            names[member.transaction_id] for group in result.matches for member in group.members
         } | {t.source_record_id for t in result.unmatched_a}
         assert {"BANK-1", "BANK-2"}.issubset(surfaced)
 
@@ -345,7 +335,5 @@ class TestFixtureCoverage:
         """Spec section 100 step 7: 17.50 vs 17.55 leaves an exception, not a match."""
         scenario = load_scenario("rounding")
         result = run_scenario(scenario)
-        assert not result.auto_matched, (
-            "a five-cent fee difference was automatically matched"
-        )
+        assert not result.auto_matched, "a five-cent fee difference was automatically matched"
         assert result.unmatched_a, "the bank deposit should be left for a human"

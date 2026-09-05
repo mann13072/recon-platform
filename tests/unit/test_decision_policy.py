@@ -74,9 +74,7 @@ def scored(
         date_distance_days=0,
     )
     warnings = (
-        (MatchWarning(code="CONFLICT_REFERENCE_DISAGREES", description="x"),)
-        if conflicts
-        else ()
+        (MatchWarning(code="CONFLICT_REFERENCE_DISAGREES", description="x"),) if conflicts else ()
     )
     return ScoredCandidate(
         candidate=candidate(),
@@ -132,9 +130,7 @@ class TestAutoMatchPreconditions:
         assert "NO_STRONG_IDENTIFIER" in result.policy_codes
 
     def test_require_unique_candidate_blocks_any_runner_up(self) -> None:
-        result = decide(
-            scored(1.0), scored(0.05), config(require_unique_candidate=True)
-        )
+        result = decide(scored(1.0), scored(0.05), config(require_unique_candidate=True))
         assert result.outcome is DecisionOutcome.SUGGEST
         assert "CANDIDATE_NOT_UNIQUE" in result.policy_codes
 
@@ -177,9 +173,7 @@ class TestAmbiguityAnalyzer:
         analyzer = AmbiguityAnalyzer()
         first = analyzer.analyze([a, b])[0]
         second = analyzer.analyze([b, a])[0]
-        assert [c.candidate.id for c in first.ranked] == [
-            c.candidate.id for c in second.ranked
-        ]
+        assert [c.candidate.id for c in first.ranked] == [c.candidate.id for c in second.ranked]
 
     def test_margin_and_competing_count(self) -> None:
         anchor = uuid4()

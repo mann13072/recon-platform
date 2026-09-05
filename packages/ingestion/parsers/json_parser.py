@@ -55,9 +55,7 @@ def parse_json(data: bytes, *, records_path: str | None = None) -> ParsedTable:
             elif not arrays:
                 records = [payload]
             else:
-                raise ValueError(
-                    "JSON object contains multiple arrays; specify records_path"
-                )
+                raise ValueError("JSON object contains multiple arrays; specify records_path")
     else:
         records = [json.loads(line) for line in text.splitlines() if line.strip()]
 

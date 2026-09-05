@@ -111,9 +111,7 @@ class AuditLog(ABC):
 class InMemoryAuditLog(AuditLog):
     """Non-persistent audit log for tests and for the pure engine."""
 
-    _events: dict[UUID, list[AuditEvent]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    _events: dict[UUID, list[AuditEvent]] = field(default_factory=lambda: defaultdict(list))
 
     def append(self, event: AuditEvent) -> AuditEvent:
         sealed = event.sealed(self.last_hash(event.tenant_id))

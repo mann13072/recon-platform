@@ -50,54 +50,99 @@ class MetricDefinition:
 
 # Spec section 60, technical metrics.
 TECHNICAL_METRICS: tuple[MetricDefinition, ...] = (
-    MetricDefinition("connector_sync_success_rate", MetricKind.GAUGE,
-                     "Fraction of connector syncs that completed successfully."),
-    MetricDefinition("connector_sync_latency", MetricKind.HISTOGRAM,
-                     "Wall-clock duration of a connector sync.", "seconds"),
-    MetricDefinition("ingestion_failures", MetricKind.COUNTER,
-                     "Files that could not be ingested, by reason."),
-    MetricDefinition("normalization_error_rate", MetricKind.GAUGE,
-                     "Fraction of source rows that failed to map."),
-    MetricDefinition("matching_job_duration", MetricKind.HISTOGRAM,
-                     "End-to-end duration of a reconciliation run.", "seconds"),
-    MetricDefinition("candidate_explosion_count", MetricKind.COUNTER,
-                     "Runs where candidates per transaction exceeded the expected band. "
-                     "A rising value means a blocking key stopped discriminating."),
-    MetricDefinition("rule_conflicts", MetricKind.COUNTER,
-                     "Anchors where two records satisfied the same rule equally."),
-    MetricDefinition("ai_call_error_rate", MetricKind.GAUGE,
-                     "Fraction of AI calls that failed at the transport."),
-    MetricDefinition("ai_schema_validation_failure", MetricKind.COUNTER,
-                     "AI responses rejected by their schema. Each produced no state change."),
-    MetricDefinition("database_latency", MetricKind.HISTOGRAM,
-                     "Query duration by operation.", "seconds"),
+    MetricDefinition(
+        "connector_sync_success_rate",
+        MetricKind.GAUGE,
+        "Fraction of connector syncs that completed successfully.",
+    ),
+    MetricDefinition(
+        "connector_sync_latency",
+        MetricKind.HISTOGRAM,
+        "Wall-clock duration of a connector sync.",
+        "seconds",
+    ),
+    MetricDefinition(
+        "ingestion_failures", MetricKind.COUNTER, "Files that could not be ingested, by reason."
+    ),
+    MetricDefinition(
+        "normalization_error_rate", MetricKind.GAUGE, "Fraction of source rows that failed to map."
+    ),
+    MetricDefinition(
+        "matching_job_duration",
+        MetricKind.HISTOGRAM,
+        "End-to-end duration of a reconciliation run.",
+        "seconds",
+    ),
+    MetricDefinition(
+        "candidate_explosion_count",
+        MetricKind.COUNTER,
+        "Runs where candidates per transaction exceeded the expected band. "
+        "A rising value means a blocking key stopped discriminating.",
+    ),
+    MetricDefinition(
+        "rule_conflicts",
+        MetricKind.COUNTER,
+        "Anchors where two records satisfied the same rule equally.",
+    ),
+    MetricDefinition(
+        "ai_call_error_rate", MetricKind.GAUGE, "Fraction of AI calls that failed at the transport."
+    ),
+    MetricDefinition(
+        "ai_schema_validation_failure",
+        MetricKind.COUNTER,
+        "AI responses rejected by their schema. Each produced no state change.",
+    ),
+    MetricDefinition(
+        "database_latency", MetricKind.HISTOGRAM, "Query duration by operation.", "seconds"
+    ),
     MetricDefinition("queue_depth", MetricKind.GAUGE, "Pending background jobs."),
 )
 
 # Spec section 60, financial-control metrics.
 FINANCIAL_CONTROL_METRICS: tuple[MetricDefinition, ...] = (
-    MetricDefinition("auto_match_precision", MetricKind.GAUGE,
-                     "Of automatic matches later reviewed, the fraction confirmed correct. "
-                     "The single most important number in the platform."),
-    MetricDefinition("false_automatic_match_rate", MetricKind.GAUGE,
-                     "Automatic matches later found to be wrong, as a fraction of all "
-                     "automatic matches. Never publish the automation rate without this."),
-    MetricDefinition("manual_override_rate", MetricKind.GAUGE,
-                     "Fraction of automated decisions a human overrode."),
-    MetricDefinition("reopened_reconciliations", MetricKind.COUNTER,
-                     "Reconciliations reopened after closing."),
-    MetricDefinition("exception_aging", MetricKind.HISTOGRAM,
-                     "Age of open exceptions.", "days"),
-    MetricDefinition("high_value_unmatched_count", MetricKind.GAUGE,
-                     "Unmatched transactions at or above the materiality threshold."),
-    MetricDefinition("rule_change_count", MetricKind.COUNTER,
-                     "Rule and threshold changes, by whether they weakened a control."),
-    MetricDefinition("auto_match_rate", MetricKind.GAUGE,
-                     "Fraction of matches made automatically. Meaningless on its own."),
+    MetricDefinition(
+        "auto_match_precision",
+        MetricKind.GAUGE,
+        "Of automatic matches later reviewed, the fraction confirmed correct. "
+        "The single most important number in the platform.",
+    ),
+    MetricDefinition(
+        "false_automatic_match_rate",
+        MetricKind.GAUGE,
+        "Automatic matches later found to be wrong, as a fraction of all "
+        "automatic matches. Never publish the automation rate without this.",
+    ),
+    MetricDefinition(
+        "manual_override_rate",
+        MetricKind.GAUGE,
+        "Fraction of automated decisions a human overrode.",
+    ),
+    MetricDefinition(
+        "reopened_reconciliations", MetricKind.COUNTER, "Reconciliations reopened after closing."
+    ),
+    MetricDefinition("exception_aging", MetricKind.HISTOGRAM, "Age of open exceptions.", "days"),
+    MetricDefinition(
+        "high_value_unmatched_count",
+        MetricKind.GAUGE,
+        "Unmatched transactions at or above the materiality threshold.",
+    ),
+    MetricDefinition(
+        "rule_change_count",
+        MetricKind.COUNTER,
+        "Rule and threshold changes, by whether they weakened a control.",
+    ),
+    MetricDefinition(
+        "auto_match_rate",
+        MetricKind.GAUGE,
+        "Fraction of matches made automatically. Meaningless on its own.",
+    ),
 )
 
 ALL_METRICS = TECHNICAL_METRICS + FINANCIAL_CONTROL_METRICS
 _BY_NAME = {m.name: m for m in ALL_METRICS}
+
+MetricLabels = tuple[tuple[str, str], ...]
+MetricKey = tuple[str, MetricLabels]
 
 
 @dataclass
@@ -108,14 +153,12 @@ class MetricRegistry:
     key regardless of the order the caller passed them.
     """
 
-    _counters: dict[tuple, float] = field(default_factory=lambda: defaultdict(float))
-    _gauges: dict[tuple, float] = field(default_factory=dict)
-    _histograms: dict[tuple, list[float]] = field(
-        default_factory=lambda: defaultdict(list)
-    )
+    _counters: dict[MetricKey, float] = field(default_factory=lambda: defaultdict(float))
+    _gauges: dict[MetricKey, float] = field(default_factory=dict)
+    _histograms: dict[MetricKey, list[float]] = field(default_factory=lambda: defaultdict(list))
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
-    def _key(self, name: str, labels: dict[str, str] | None) -> tuple:
+    def _key(self, name: str, labels: dict[str, str] | None) -> MetricKey:
         if name not in _BY_NAME:
             raise KeyError(
                 f"unknown metric '{name}'. Metrics are declared in "
@@ -147,13 +190,10 @@ class MetricRegistry:
         """Everything recorded so far, for an exporter or a test."""
         with self._lock:
             return {
-                "counters": {
-                    _render(key): value for key, value in self._counters.items()
-                },
+                "counters": {_render(key): value for key, value in self._counters.items()},
                 "gauges": {_render(key): value for key, value in self._gauges.items()},
                 "histograms": {
-                    _render(key): _summarise(values)
-                    for key, values in self._histograms.items()
+                    _render(key): _summarise(values) for key, values in self._histograms.items()
                 },
             }
 
@@ -164,7 +204,7 @@ class MetricRegistry:
             self._histograms.clear()
 
 
-def _render(key: tuple) -> str:
+def _render(key: MetricKey) -> str:
     name, labels = key
     if not labels:
         return str(name)

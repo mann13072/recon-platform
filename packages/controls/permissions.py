@@ -198,9 +198,7 @@ class PermissionDenied(PermissionError):
     """Raised when a principal lacks a required permission."""
 
     def __init__(self, permission: Permission, principal: Principal) -> None:
-        super().__init__(
-            f"{principal.describe()} does not hold permission '{permission.value}'"
-        )
+        super().__init__(f"{principal.describe()} does not hold permission '{permission.value}'")
         self.permission = permission
         self.principal = principal
 

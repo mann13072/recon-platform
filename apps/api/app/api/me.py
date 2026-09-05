@@ -7,14 +7,15 @@ hiding one they can perform is worse.
 
 from __future__ import annotations
 
-from apps.api.app.dependencies import Context
 from fastapi import APIRouter
+
+from apps.api.app.dependencies import Context
 
 router = APIRouter(prefix="/me", tags=["me"])
 
 
 @router.get("")
-def whoami(context: Context) -> dict:
+def whoami(context: Context) -> dict[str, object]:
     principal = context.principal
     return {
         "user_id": str(principal.user_id) if principal.user_id else None,

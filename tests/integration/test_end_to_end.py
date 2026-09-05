@@ -78,9 +78,7 @@ def client(
 
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_session] = override_session
-    app.dependency_overrides[get_storage] = lambda: LocalObjectStorage(
-        root=tmp_path / "storage"
-    )
+    app.dependency_overrides[get_storage] = lambda: LocalObjectStorage(root=tmp_path / "storage")
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
@@ -141,9 +139,7 @@ def upload_and_ingest(
         ],
         "static_values": {},
     }
-    mapped = client.post(
-        f"/api/v1/files/{file_id}/mapping", headers=headers, json=mapping
-    )
+    mapped = client.post(f"/api/v1/files/{file_id}/mapping", headers=headers, json=mapping)
     assert mapped.status_code == 200, mapped.text
 
     ingested = client.post(f"/api/v1/files/{file_id}/ingest", headers=headers)
@@ -160,22 +156,26 @@ class TestGoldenDemo:
 
         # -- 1. upload and ingest both sides ------------------------------
         bank = upload_and_ingest(
-            client, preparer, filename="bank_august.csv", data=BANK_CSV,
+            client,
+            preparer,
+            filename="bank_august.csv",
+            data=BANK_CSV,
             source_system="bank",
         )
         assert bank["transactions_created"] == 5
         assert bank["rows_failed"] == 0
 
         ledger = upload_and_ingest(
-            client, preparer, filename="ledger_august.csv", data=LEDGER_CSV,
+            client,
+            preparer,
+            filename="ledger_august.csv",
+            data=LEDGER_CSV,
             source_system="ledger",
         )
         assert ledger["transactions_created"] == 4
 
         # -- 2. re-ingesting is idempotent --------------------------------
-        again = client.post(
-            f"/api/v1/files/{bank['file_id']}/ingest", headers=preparer
-        )
+        again = client.post(f"/api/v1/files/{bank['file_id']}/ingest", headers=preparer)
         assert again.status_code == 200
         assert again.json()["transactions_created"] == 0
         assert again.json()["duplicates_skipped"] == 5
@@ -225,9 +225,7 @@ class TestGoldenDemo:
         assert summary["auto_matched_count"] >= 2
 
         # -- 7. exact invoice matches happened deterministically ----------
-        matches = client.get(
-            f"/api/v1/runs/{run_id}/matches", headers=preparer
-        ).json()
+        matches = client.get(f"/api/v1/runs/{run_id}/matches", headers=preparer).json()
         assert matches, "the two exact invoice matches were not found"
         auto = [m for m in matches if m["decision"] == "AUTO_MATCH"]
         assert len(auto) >= 2
@@ -237,9 +235,7 @@ class TestGoldenDemo:
             assert match["reasons"], "an automatic match with no explanation"
 
         # -- 8. exceptions were raised for the rest -----------------------
-        exceptions = client.get(
-            f"/api/v1/runs/{run_id}/exceptions", headers=preparer
-        ).json()
+        exceptions = client.get(f"/api/v1/runs/{run_id}/exceptions", headers=preparer).json()
         assert exceptions, "nothing was routed to a human"
         categories = {e["category"] for e in exceptions}
         assert categories, categories
@@ -290,24 +286,33 @@ class TestGoldenDemo:
             assert skipped.status_code == 422
             assert "Legal next states" in skipped.json()["detail"]
 
-            assert client.post(
-                f"/api/v1/exceptions/{exception_id}/assign",
-                headers=controller,
-                json={"owner_user_id": controller_id},
-            ).status_code == 200
-            assert client.post(
-                f"/api/v1/exceptions/{exception_id}/transition",
-                headers=controller,
-                json={"status": "INVESTIGATING"},
-            ).status_code == 200
-            assert client.post(
-                f"/api/v1/exceptions/{exception_id}/propose-resolution",
-                headers=controller,
-                json={
-                    "proposed_resolution": "Carry forward as a reconciling item.",
-                    "resolution_code": "CARRY_FORWARD",
-                },
-            ).status_code == 200
+            assert (
+                client.post(
+                    f"/api/v1/exceptions/{exception_id}/assign",
+                    headers=controller,
+                    json={"owner_user_id": controller_id},
+                ).status_code
+                == 200
+            )
+            assert (
+                client.post(
+                    f"/api/v1/exceptions/{exception_id}/transition",
+                    headers=controller,
+                    json={"status": "INVESTIGATING"},
+                ).status_code
+                == 200
+            )
+            assert (
+                client.post(
+                    f"/api/v1/exceptions/{exception_id}/propose-resolution",
+                    headers=controller,
+                    json={
+                        "proposed_resolution": "Carry forward as a reconciling item.",
+                        "resolution_code": "CARRY_FORWARD",
+                    },
+                ).status_code
+                == 200
+            )
             resolved = client.post(
                 f"/api/v1/exceptions/{exception_id}/approve-resolution",
                 headers=controller,
@@ -317,16 +322,12 @@ class TestGoldenDemo:
                 },
             )
             assert resolved.status_code == 200, resolved.text
-            closed = client.post(
-                f"/api/v1/exceptions/{exception_id}/close", headers=controller
-            )
+            closed = client.post(f"/api/v1/exceptions/{exception_id}/close", headers=controller)
             assert closed.status_code == 200, closed.text
             assert closed.json()["status"] == "CLOSED"
 
         # -- 11. reject or approve anything still pending -----------------
-        remaining = client.get(
-            f"/api/v1/runs/{run_id}/matches", headers=preparer
-        ).json()
+        remaining = client.get(f"/api/v1/runs/{run_id}/matches", headers=preparer).json()
         for match in remaining:
             if match["status"] in {"SUGGESTED", "PROPOSED"}:
                 rejected = client.post(
@@ -340,9 +341,7 @@ class TestGoldenDemo:
                 assert rejected.status_code == 200, rejected.text
 
         # -- 12. close ----------------------------------------------------
-        preflight = client.get(
-            f"/api/v1/runs/{run_id}/close-preflight", headers=controller
-        ).json()
+        preflight = client.get(f"/api/v1/runs/{run_id}/close-preflight", headers=controller).json()
         assert preflight["unresolved_required_exceptions"] == 0
         assert preflight["pending_approvals"] == 0
 
@@ -397,9 +396,7 @@ class TestGoldenDemo:
             assert required in actions, f"{required} is missing from the audit trail"
 
         # -- 15. the audit package exports --------------------------------
-        package = client.get(
-            f"/api/v1/runs/{run_id}/audit-package", headers=controller
-        )
+        package = client.get(f"/api/v1/runs/{run_id}/audit-package", headers=controller)
         assert package.status_code == 200
         assert package.headers["content-type"] == "application/zip"
 
@@ -454,8 +451,7 @@ class TestReproducibility:
         assert replay.status_code == 200, replay.text
         body = replay.json()
         assert body["reproducible"] is True, (
-            f"stored {body['stored_result_hash']} != replayed "
-            f"{body['replayed_result_hash']}"
+            f"stored {body['stored_result_hash']} != replayed {body['replayed_result_hash']}"
         )
 
 
@@ -470,17 +466,13 @@ class TestTenantIsolationOverHttp:
         mine = auth(settings, tenant, ["CONTROLLER"], "dave")
         theirs = auth(settings, other, ["CONTROLLER"], "eve")
 
-        upload_and_ingest(
-            client, mine, filename="bank.csv", data=BANK_CSV, source_system="bank"
-        )
+        upload_and_ingest(client, mine, filename="bank.csv", data=BANK_CSV, source_system="bank")
 
         assert len(client.get("/api/v1/transactions", headers=mine).json()) == 5
         assert client.get("/api/v1/transactions", headers=theirs).json() == []
 
         my_transaction = client.get("/api/v1/transactions", headers=mine).json()[0]
-        cross = client.get(
-            f"/api/v1/transactions/{my_transaction['id']}", headers=theirs
-        )
+        cross = client.get(f"/api/v1/transactions/{my_transaction['id']}", headers=theirs)
         assert cross.status_code == 404
 
     def test_an_unauthenticated_request_is_refused(self, client: TestClient) -> None:
@@ -492,9 +484,7 @@ class TestTenantIsolationOverHttp:
             "eyJzdWIiOiJhdHRhY2tlciIsImV4cCI6OTk5OTk5OTk5OX0."
             "not-a-real-signature"
         )
-        response = client.get(
-            "/api/v1/transactions", headers={"Authorization": f"Bearer {forged}"}
-        )
+        response = client.get("/api/v1/transactions", headers={"Authorization": f"Bearer {forged}"})
         assert response.status_code == 401
 
 
@@ -515,9 +505,7 @@ class TestMoneyOverTheWire:
     ) -> None:
         """A JSON number becomes a float in most clients; 982.45 would not survive."""
         headers = auth(settings, tenant, ["PREPARER"], "frank")
-        upload_and_ingest(
-            client, headers, filename="bank.csv", data=BANK_CSV, source_system="bank"
-        )
+        upload_and_ingest(client, headers, filename="bank.csv", data=BANK_CSV, source_system="bank")
         body = client.get("/api/v1/transactions", headers=headers).content.decode()
         assert '"amount":"982.45"' in body.replace(" ", "")
         transactions = client.get("/api/v1/transactions", headers=headers).json()

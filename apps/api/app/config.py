@@ -17,17 +17,13 @@ __all__ = ["Settings", "get_settings"]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     environment: str = Field(default="development", alias="ENVIRONMENT")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     # -- database ----------------------------------------------------------
-    database_url: str = Field(
-        default="sqlite+pysqlite:///./recon.sqlite3", alias="DATABASE_URL"
-    )
+    database_url: str = Field(default="sqlite+pysqlite:///./recon.sqlite3", alias="DATABASE_URL")
     database_echo: bool = Field(default=False, alias="DATABASE_ECHO")
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
 
@@ -88,8 +84,7 @@ class Settings(BaseSettings):
             )
         if not (self.auth_issuer and self.auth_audience and self.auth_jwks_url):
             problems.append(
-                "AUTH_ISSUER, AUTH_AUDIENCE and AUTH_JWKS_URL are all required "
-                "in production"
+                "AUTH_ISSUER, AUTH_AUDIENCE and AUTH_JWKS_URL are all required in production"
             )
         if self.is_sqlite:
             problems.append("SQLite is not a supported production database")
@@ -99,9 +94,7 @@ class Settings(BaseSettings):
                 "never stored unencrypted"
             )
         if problems:
-            raise ValueError(
-                "Refusing to start in production: " + "; ".join(problems) + "."
-            )
+            raise ValueError("Refusing to start in production: " + "; ".join(problems) + ".")
         return self
 
 

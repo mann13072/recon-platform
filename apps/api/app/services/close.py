@@ -78,9 +78,7 @@ class CloseService:
 
     @property
     def exceptions(self) -> ExceptionRepository:
-        return ExceptionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return ExceptionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     @property
     def definitions(self) -> ReconciliationRepository:
@@ -131,11 +129,7 @@ class CloseService:
 
         summary = RunSummary.model_validate(run.summary or {})
         snapshot = self.runs.snapshot(run.id)
-        period = (
-            run.period_end.strftime("%Y-%m")
-            if run.period_end
-            else utc_now().strftime("%Y-%m")
-        )
+        period = run.period_end.strftime("%Y-%m") if run.period_end else utc_now().strftime("%Y-%m")
 
         certificate = CloseCertificate(
             run_id=run.id,
@@ -182,9 +176,7 @@ class CloseService:
         assert_can_reopen_run(self.context.principal, reason)
 
         if run.status != ReconciliationStatus.CLOSED.value:
-            raise CloseError(
-                "Only a closed reconciliation can be reopened.", "not_closed"
-            )
+            raise CloseError("Only a closed reconciliation can be reopened.", "not_closed")
 
         updated = self.runs.update_status(
             run.id,
@@ -218,12 +210,8 @@ class CloseService:
             run_id=run.id,
             tenant_id=self.context.tenant_id,
             reconciliation_id=definition.id,
-            side_a_transaction_ids=tuple(
-                UUID(str(i)) for i in snapshot_row.side_a_transaction_ids
-            ),
-            side_b_transaction_ids=tuple(
-                UUID(str(i)) for i in snapshot_row.side_b_transaction_ids
-            ),
+            side_a_transaction_ids=tuple(UUID(str(i)) for i in snapshot_row.side_a_transaction_ids),
+            side_b_transaction_ids=tuple(UUID(str(i)) for i in snapshot_row.side_b_transaction_ids),
             source_checksums=dict(snapshot_row.source_checksums or {}),
             rule_set_version=snapshot_row.rule_set_version,
             rule_versions=dict(snapshot_row.rule_versions or {}),
@@ -306,9 +294,7 @@ class CloseService:
 
     def _blockers(self, run: RunRow, config: ReconciliationConfig) -> dict[str, int]:
         records = self.exceptions.list(run_id=run.id, limit=100_000)
-        unresolved = sum(
-            1 for r in records if r.requires_approval and r.status in _UNRESOLVED
-        )
+        unresolved = sum(1 for r in records if r.requires_approval and r.status in _UNRESOLVED)
 
         match_counts = self.matches.counts_by_status(run.id)
         pending = match_counts.get("SUGGESTED", 0) + match_counts.get("PROPOSED", 0)

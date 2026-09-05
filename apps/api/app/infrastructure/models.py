@@ -80,9 +80,7 @@ def _tenant_fk() -> Mapped[UUID]:
 
 
 def _created_at() -> Mapped[datetime]:
-    return mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    return mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
 # ---------------------------------------------------------------------------
@@ -135,9 +133,7 @@ class UserRow(Base):
 
 class UserRoleRow(Base):
     __tablename__ = "user_roles"
-    __table_args__ = (
-        UniqueConstraint("user_id", "role", name="uq_user_roles_user_role"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "role", name="uq_user_roles_user_role"),)
 
     id: Mapped[UUID] = _pk()
     tenant_id: Mapped[UUID] = _tenant_fk()
@@ -158,9 +154,7 @@ class UserRoleRow(Base):
 
 class ConnectionRow(Base):
     __tablename__ = "connections"
-    __table_args__ = (
-        UniqueConstraint("tenant_id", "slug", name="uq_connections_tenant_slug"),
-    )
+    __table_args__ = (UniqueConstraint("tenant_id", "slug", name="uq_connections_tenant_slug"),)
 
     id: Mapped[UUID] = _pk()
     tenant_id: Mapped[UUID] = _tenant_fk()
@@ -367,9 +361,7 @@ class TransactionLineageRow(Base):
     """Per-field provenance (spec section 59)."""
 
     __tablename__ = "transaction_lineage"
-    __table_args__ = (
-        Index("ix_lineage_transaction", "tenant_id", "transaction_id"),
-    )
+    __table_args__ = (Index("ix_lineage_transaction", "tenant_id", "transaction_id"),)
 
     id: Mapped[UUID] = _pk()
     tenant_id: Mapped[UUID] = _tenant_fk()
@@ -408,9 +400,7 @@ class RuleSetRow(Base):
 
 class ReconciliationRow(Base):
     __tablename__ = "reconciliation_definitions"
-    __table_args__ = (
-        UniqueConstraint("tenant_id", "slug", name="uq_reconciliations_tenant_slug"),
-    )
+    __table_args__ = (UniqueConstraint("tenant_id", "slug", name="uq_reconciliations_tenant_slug"),)
 
     id: Mapped[UUID] = _pk()
     tenant_id: Mapped[UUID] = _tenant_fk()
@@ -435,9 +425,7 @@ class RunRow(Base):
     __tablename__ = "reconciliation_runs"
     __table_args__ = (
         Index("ix_runs_tenant_reconciliation", "tenant_id", "reconciliation_id"),
-        UniqueConstraint(
-            "tenant_id", "idempotency_key", name="uq_runs_tenant_idempotency"
-        ),
+        UniqueConstraint("tenant_id", "idempotency_key", name="uq_runs_tenant_idempotency"),
     )
 
     id: Mapped[UUID] = _pk()
@@ -729,9 +717,7 @@ class EntityAliasRow(Base):
 
 class PeriodLockRow(Base):
     __tablename__ = "period_locks"
-    __table_args__ = (
-        Index("ix_period_locks_entity", "tenant_id", "entity"),
-    )
+    __table_args__ = (Index("ix_period_locks_entity", "tenant_id", "entity"),)
 
     id: Mapped[UUID] = _pk()
     tenant_id: Mapped[UUID] = _tenant_fk()
@@ -786,9 +772,7 @@ class AuditEventRow(Base):
     ip_address: Mapped[str | None] = mapped_column(String(64))
     user_agent: Mapped[str | None] = mapped_column(String(512))
     reason: Mapped[str | None] = mapped_column(Text)
-    event_metadata: Mapped[dict[str, Any]] = mapped_column(
-        JSONColumn, nullable=False, default=dict
-    )
+    event_metadata: Mapped[dict[str, Any]] = mapped_column(JSONColumn, nullable=False, default=dict)
 
 
 class AICallRow(Base):

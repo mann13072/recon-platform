@@ -56,10 +56,7 @@ def evaluate_escalation(
             )
         )
 
-    if (
-        exception.severity is ExceptionSeverity.CRITICAL
-        and days >= policy.critical_age_days
-    ):
+    if exception.severity is ExceptionSeverity.CRITICAL and days >= policy.critical_age_days:
         triggers.append(
             EscalationTrigger(
                 "CRITICAL_AGE",

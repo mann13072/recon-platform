@@ -10,8 +10,6 @@ Everything a connector must provide is defined in ``packages.connectors.base``.
 See ``docs/connector-sdk.md``.
 """
 
-from packages.connectors.base import Connector
-
 __all__: list[str] = []
 
 IMPLEMENTED = False

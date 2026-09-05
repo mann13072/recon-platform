@@ -30,7 +30,7 @@ from packages.ai.privacy import TenantAISettings
 from packages.ai.provider import AIProvider, build_provider
 from packages.audit.logger import AuditContext
 from packages.controls.permissions import Permission, PermissionDenied, Principal
-from packages.domain.enums import AIPolicy, ActorType, Role
+from packages.domain.enums import ActorType, AIPolicy, Role
 
 __all__ = [
     "CurrentPrincipal",
@@ -93,9 +93,7 @@ def get_principal(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    tenant_raw = claims.get("https://recon-platform.example/tenant_id") or claims.get(
-        "tenant_id"
-    )
+    tenant_raw = claims.get("https://recon-platform.example/tenant_id") or claims.get("tenant_id")
     subject = str(claims.get("sub"))
 
     tenant = session.get(TenantRow, UUID(str(tenant_raw))) if tenant_raw else None
@@ -129,14 +127,10 @@ def get_principal(
     try:
         principal = principal_from_claims(claims, user_id=user.id)
     except AuthError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
     if principal.tenant_id != tenant.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Tenant mismatch."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tenant mismatch.")
 
     # Keep the local role projection in step, so an operator reading the
     # database can see who holds what without decoding tokens.
@@ -165,11 +159,7 @@ def _sync_roles(session: Session, user: UserRow, roles: frozenset[Role]) -> None
         if row.role not in wanted:
             session.delete(row)
     for role in wanted - current:
-        session.add(
-            UserRoleRow(
-                id=uuid4(), tenant_id=user.tenant_id, user_id=user.id, role=role
-            )
-        )
+        session.add(UserRoleRow(id=uuid4(), tenant_id=user.tenant_id, user_id=user.id, role=role))
     session.flush()
 
 
@@ -183,9 +173,7 @@ def require_permission(permission: Permission):  # type: ignore[no-untyped-def]
     itself something an auditor wants to see (spec section 60).
     """
 
-    def dependency(
-        principal: CurrentPrincipal, session: DbSession
-    ) -> Principal:
+    def dependency(principal: CurrentPrincipal, session: DbSession) -> Principal:
         try:
             principal.require(permission)
         except PermissionDenied as exc:
@@ -205,9 +193,7 @@ def require_permission(permission: Permission):  # type: ignore[no-untyped-def]
                 metadata={"permission": permission.value},
             )
             session.commit()
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
         return principal
 
     return dependency
@@ -240,9 +226,7 @@ class RequestContext:
         )
 
     def cipher(self) -> CredentialCipher:
-        return CredentialCipher(
-            EnvKeyProvider(self.settings.credential_encryption_key)
-        )
+        return CredentialCipher(EnvKeyProvider(self.settings.credential_encryption_key))
 
 
 def get_storage(settings: SettingsDep) -> ObjectStorage:
@@ -272,7 +256,9 @@ def get_context(
 
     ai_settings = TenantAISettings(
         policy=policy,
-        allowed_regions=frozenset(tenant.ai_allowed_regions or ["eu"]) if tenant else frozenset({"eu"}),
+        allowed_regions=frozenset(tenant.ai_allowed_regions or ["eu"])
+        if tenant
+        else frozenset({"eu"}),
         provider_region=tenant.data_region if tenant else "eu",
         latency_budget_ms=settings.ai_latency_budget_ms,
     )

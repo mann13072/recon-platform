@@ -76,15 +76,11 @@ class IngestionService:
 
     @property
     def files(self) -> SourceFileRepository:
-        return SourceFileRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return SourceFileRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     @property
     def transactions(self) -> TransactionRepository:
-        return TransactionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return TransactionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     # -- upload ------------------------------------------------------------
     def upload(
@@ -468,9 +464,7 @@ def _mapping_from_json(payload: dict[str, Any]) -> SourceMapping:
                 canonical_field=column["canonical_field"],
                 date_format=column.get("date_format"),
                 number_format=(
-                    NumberFormat(column["number_format"])
-                    if column.get("number_format")
-                    else None
+                    NumberFormat(column["number_format"]) if column.get("number_format") else None
                 ),
                 negate=bool(column.get("negate", False)),
                 confidence=float(column.get("confidence", 0.0)),

@@ -136,9 +136,7 @@ class Money:
     # -- arithmetic --------------------------------------------------------
     def _assert_same_currency(self, other: Money) -> None:
         if self.currency != other.currency:
-            raise CurrencyMismatchError(
-                f"Currency mismatch: {self.currency} vs {other.currency}"
-            )
+            raise CurrencyMismatchError(f"Currency mismatch: {self.currency} vs {other.currency}")
 
     def add(self, other: Money) -> Money:
         self._assert_same_currency(other)

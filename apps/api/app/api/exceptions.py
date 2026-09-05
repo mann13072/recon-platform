@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -67,7 +67,7 @@ def exception_aging(
     context: Context,
     run_id: UUID | None = None,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_EXCEPTIONS))] = None,
-) -> dict:
+) -> dict[str, Any]:
     return ExceptionService(context).aging(run_id)
 
 
@@ -76,7 +76,7 @@ def exception_escalations(
     context: Context,
     run_id: UUID | None = None,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_EXCEPTIONS))] = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     return ExceptionService(context).escalations(run_id)
 
 
@@ -194,9 +194,7 @@ def close_exception(
 ) -> ExceptionResponse:
     """Close a resolved exception. Only an authenticated human may do this."""
     try:
-        record = ExceptionService(context).transition(
-            exception_id, ExceptionStatus.CLOSED
-        )
+        record = ExceptionService(context).transition(exception_id, ExceptionStatus.CLOSED)
     except Exception as exc:
         raise _handle(exc) from exc
     return ExceptionResponse.model_validate(record.model_dump())
@@ -283,7 +281,7 @@ def request_ai_classification(
     context: Context,
     exception_id: UUID,
     _: Annotated[object, Depends(require_permission(Permission.USE_AI_SUGGESTIONS))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """Ask the assistant for an opinion.
 
     The response is advisory: the exception's category and status are unchanged
@@ -301,7 +299,7 @@ def record_ai_decision(
     exception_id: UUID,
     accepted: bool,
     _: Annotated[object, Depends(require_permission(Permission.USE_AI_SUGGESTIONS))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """Record whether the reviewer took the suggestion (spec section 46)."""
     try:
         ExceptionService(context).record_ai_decision(exception_id, accepted=accepted)

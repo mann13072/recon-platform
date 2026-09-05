@@ -40,11 +40,7 @@ class ClassificationOutcome:
         if self.ai is None or not self.ai.usable:
             return None
         suggestion = self.ai.suggestion
-        return (
-            suggestion
-            if isinstance(suggestion, ExceptionClassificationSuggestion)
-            else None
-        )
+        return suggestion if isinstance(suggestion, ExceptionClassificationSuggestion) else None
 
 
 def classify_with_ai(
@@ -89,18 +85,10 @@ def classify_with_ai(
     if candidate is not None:
         payload.update(
             {
-                "gross_amount": (
-                    str(candidate.gross_amount) if candidate.gross_amount else None
-                ),
-                "fee_amount": (
-                    str(candidate.fee_amount) if candidate.fee_amount else None
-                ),
-                "tax_amount": (
-                    str(candidate.tax_amount) if candidate.tax_amount else None
-                ),
-                "net_amount": (
-                    str(candidate.net_amount) if candidate.net_amount else None
-                ),
+                "gross_amount": (str(candidate.gross_amount) if candidate.gross_amount else None),
+                "fee_amount": (str(candidate.fee_amount) if candidate.fee_amount else None),
+                "tax_amount": (str(candidate.tax_amount) if candidate.tax_amount else None),
+                "net_amount": (str(candidate.net_amount) if candidate.net_amount else None),
                 "settlement_id": candidate.settlement_id,
                 "payout_id": candidate.payout_id,
             }
@@ -109,13 +97,9 @@ def classify_with_ai(
     try:
         envelope = provider.classify_exception(tenant_id, payload, settings)
     except (AIDisabledError, DataRegionViolation) as exc:
-        return ClassificationOutcome(
-            classification=deterministic, ai_skipped_reason=str(exc)
-        )
+        return ClassificationOutcome(classification=deterministic, ai_skipped_reason=str(exc))
 
-    return ClassificationOutcome(
-        classification=deterministic, ai=envelope, ai_consulted=True
-    )
+    return ClassificationOutcome(classification=deterministic, ai=envelope, ai_consulted=True)
 
 
 def attach_suggestion(

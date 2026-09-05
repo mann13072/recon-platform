@@ -194,9 +194,7 @@ class MatchingRule(BaseModel):
         if not self.conditions:
             raise ValueError(f"rule {self.id} has no conditions")
         if self.deterministic and any(not c.hard for c in self.conditions):
-            raise ValueError(
-                f"rule {self.id} is marked deterministic but has weighted conditions"
-            )
+            raise ValueError(f"rule {self.id} is marked deterministic but has weighted conditions")
         return self
 
     @property
@@ -297,8 +295,7 @@ def evaluate_condition(
 
     if op is ConditionOperator.CONTAINS:
         # Directional: does B's identifier appear inside A's description?
-        return description_contains(str(left) if left else None,
-                                    str(right) if right else None), 1.0
+        return description_contains(str(left) if left else None, str(right) if right else None), 1.0
 
     if left is None or right is None:
         return False, 0.0
@@ -317,28 +314,34 @@ def evaluate_condition(
         if not isinstance(left, date) or not isinstance(right, date):
             return False, 0.0
         distance = date_distance_days(left, right)
-        limit = int(condition.value)  # type: ignore[arg-type]
-        if distance is None or distance > limit:
+        date_limit = int(condition.value)  # type: ignore[arg-type]
+        if distance is None or distance > date_limit:
             return False, 0.0
         # Closer dates score higher within the allowed window.
-        return True, 1.0 - (distance / (limit + 1))
+        return True, 1.0 - (distance / (date_limit + 1))
 
     if op is ConditionOperator.WITHIN_ABSOLUTE:
         difference = abs(Decimal(str(left)) - Decimal(str(right)))
-        limit = Decimal(str(condition.value))
-        if difference > limit:
+        absolute_limit = Decimal(str(condition.value))
+        if difference > absolute_limit:
             return False, 0.0
-        return True, 1.0 if limit == 0 else float(1 - (difference / limit))
+        return (
+            True,
+            1.0 if absolute_limit == 0 else float(1 - (difference / absolute_limit)),
+        )
 
     if op is ConditionOperator.WITHIN_PERCENTAGE:
         base = abs(Decimal(str(right)))
         if base == 0:
             return Decimal(str(left)) == 0, 1.0
         ratio = abs(Decimal(str(left)) - Decimal(str(right))) / base
-        limit = Decimal(str(condition.value))
-        if ratio > limit:
+        percentage_limit = Decimal(str(condition.value))
+        if ratio > percentage_limit:
             return False, 0.0
-        return True, 1.0 if limit == 0 else float(1 - (ratio / limit))
+        return (
+            True,
+            1.0 if percentage_limit == 0 else float(1 - (ratio / percentage_limit)),
+        )
 
     similarity_fn = {
         ConditionOperator.SIMILARITY_AT_LEAST: jaro_winkler_similarity,

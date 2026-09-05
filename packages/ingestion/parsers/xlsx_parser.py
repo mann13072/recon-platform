@@ -102,7 +102,7 @@ def parse_xlsx(
                 continue
             total += 1
             if len(values) > len(columns):
-                extra = [v for v in values[len(columns):] if v]
+                extra = [v for v in values[len(columns) :] if v]
                 if extra:
                     skipped.append(
                         (line_number, f"row has {len(values)} values for {len(columns)} columns")

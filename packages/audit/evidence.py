@@ -71,9 +71,7 @@ class EvidenceMetadata:
         if mime_type not in ALLOWED_EVIDENCE_MIME_TYPES:
             raise ValueError(f"evidence type not allowed: {mime_type}")
         if len(data) > MAX_EVIDENCE_BYTES:
-            raise ValueError(
-                f"evidence exceeds the {MAX_EVIDENCE_BYTES // (1024 * 1024)}MB limit"
-            )
+            raise ValueError(f"evidence exceeds the {MAX_EVIDENCE_BYTES // (1024 * 1024)}MB limit")
         if not data:
             raise ValueError("evidence file is empty")
         return cls(
@@ -141,9 +139,7 @@ def build_audit_package(
                 "generated_at": stamp.isoformat(),
                 "summary": summary.model_dump(mode="json"),
                 "snapshot": snapshot.model_dump(mode="json"),
-                "close_certificate": (
-                    certificate.model_dump(mode="json") if certificate else None
-                ),
+                "close_certificate": (certificate.model_dump(mode="json") if certificate else None),
             },
             indent=2,
             sort_keys=True,
@@ -204,9 +200,7 @@ def build_audit_package(
                     "explanation": " ".join(r.description for r in group.reasons),
                     "warnings": " ".join(w.code for w in group.warnings),
                     "approved_by": str(group.approved_by) if group.approved_by else "",
-                    "approved_at": (
-                        group.approved_at.isoformat() if group.approved_at else ""
-                    ),
+                    "approved_at": (group.approved_at.isoformat() if group.approved_at else ""),
                     "override_reason": group.override_reason or "",
                 }
                 for group in sorted(matches, key=lambda g: str(g.id))
@@ -246,9 +240,7 @@ def build_audit_package(
                     "category": item.category.value,
                     "severity": item.severity.value,
                     "status": item.status.value,
-                    "amount_exposure": (
-                        str(item.amount_exposure) if item.amount_exposure else ""
-                    ),
+                    "amount_exposure": (str(item.amount_exposure) if item.amount_exposure else ""),
                     "currency": item.currency or "",
                     "owner": str(item.owner_user_id) if item.owner_user_id else "",
                     "first_detected_at": item.first_detected_at.isoformat(),
@@ -290,9 +282,7 @@ def build_audit_package(
                     "match_group_id": str(group.id),
                     "status": group.status.value,
                     "approved_by": str(group.approved_by) if group.approved_by else "",
-                    "approved_at": (
-                        group.approved_at.isoformat() if group.approved_at else ""
-                    ),
+                    "approved_at": (group.approved_at.isoformat() if group.approved_at else ""),
                     "override_reason": group.override_reason or "",
                     "amount": str(group.total_amount),
                     "currency": group.currency,
@@ -363,9 +353,7 @@ def build_audit_package(
                     "uploaded_at": item.uploaded_at.isoformat(),
                     "retention_policy": item.retention_policy,
                     "exception_id": str(item.exception_id) if item.exception_id else "",
-                    "match_group_id": (
-                        str(item.match_group_id) if item.match_group_id else ""
-                    ),
+                    "match_group_id": (str(item.match_group_id) if item.match_group_id else ""),
                 }
                 for item in sorted(evidence, key=lambda e: str(e.id))
             ],

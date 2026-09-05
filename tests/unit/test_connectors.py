@@ -53,7 +53,9 @@ PAYOUT = {
 class _RecordedTransport:
     """Serves recorded responses; optionally fails a set number of times first."""
 
-    def __init__(self, responses: dict[str, Any], fail_times: int = 0, error: Exception | None = None) -> None:
+    def __init__(
+        self, responses: dict[str, Any], fail_times: int = 0, error: Exception | None = None
+    ) -> None:
         self.responses = responses
         self.fail_times = fail_times
         self.error = error or TransientConnectorError("temporary")
@@ -168,9 +170,7 @@ class TestConnectorLifecycle:
         assert ConnectorHealth(state=ConnectorState.HEALTHY).is_usable is True
 
     async def test_sync_normalises_every_payout(self) -> None:
-        transport = _RecordedTransport(
-            {"/v1/payouts": {"data": [PAYOUT], "has_more": False}}
-        )
+        transport = _RecordedTransport({"/v1/payouts": {"data": [PAYOUT], "has_more": False}})
         connector = StripeConnector(context(), transport)
         result = await connector.sync(
             "default", datetime(2026, 8, 1, tzinfo=UTC), datetime(2026, 8, 31, tzinfo=UTC)
@@ -201,15 +201,13 @@ class TestRetryPolicy:
             assert 0.0 <= policy.delay_for(attempt, rng=rng) <= ceiling
 
     async def test_transient_failures_are_retried_then_succeed(self) -> None:
-        transport = _RecordedTransport(
-            {"/v1/balance": {"available": []}}, fail_times=2
-        )
+        transport = _RecordedTransport({"/v1/balance": {"available": []}}, fail_times=2)
         connector = StripeConnector(
             context(retry=RetryPolicy(max_attempts=4, base_delay_seconds=0.001)),
             transport,
         )
         await connector.context.retry.run(connector.authenticate)
-        assert connector.health.state is ConnectorState.HEALTHY or True
+        assert connector.health.state is ConnectorState.HEALTHY
 
     async def test_a_rate_limit_is_not_treated_as_a_failure(self) -> None:
         error = RateLimitError("slow down", retry_after_seconds=0.001)
@@ -259,26 +257,20 @@ class TestWebhookSignatures:
         payload = b'{"id":"evt_1"}'
         old = int(time.time()) - 86_400
         with pytest.raises(SignatureError) as exc:
-            verify_stripe_signature(
-                payload, sign_stripe_payload(payload, SECRET, old), SECRET
-            )
+            verify_stripe_signature(payload, sign_stripe_payload(payload, SECRET, old), SECRET)
         assert exc.value.code == "stale_timestamp"
 
     def test_a_future_timestamp_is_refused(self) -> None:
         payload = b'{"id":"evt_1"}'
         future = int(time.time()) + 86_400
         with pytest.raises(SignatureError) as exc:
-            verify_stripe_signature(
-                payload, sign_stripe_payload(payload, SECRET, future), SECRET
-            )
+            verify_stripe_signature(payload, sign_stripe_payload(payload, SECRET, future), SECRET)
         assert exc.value.code == "future_timestamp"
 
     def test_a_timestamp_inside_the_tolerance_passes(self) -> None:
         payload = b'{"id":"evt_1"}'
         recent = int(time.time()) - 120
-        verify_stripe_signature(
-            payload, sign_stripe_payload(payload, SECRET, recent), SECRET
-        )
+        verify_stripe_signature(payload, sign_stripe_payload(payload, SECRET, recent), SECRET)
 
     def test_a_malformed_header_is_refused(self) -> None:
         for header in ("", "garbage", "t=abc,v1=x", "v1=onlysignature", "t=123"):
@@ -289,7 +281,8 @@ class TestWebhookSignatures:
         payload = b'{"id":"evt_1"}'
         now = int(time.time())
         valid = sign_stripe_payload(payload, SECRET, now).split("v1=")[1]
-        header = f"t={now},v1=0000000000000000000000000000000000000000000000000000000000000000,v1={valid}"
+        invalid = "0" * 64
+        header = f"t={now},v1={invalid},v1={valid}"
         verify_stripe_signature(payload, header, SECRET)
 
     def test_an_unconfigured_secret_refuses_rather_than_accepts(self) -> None:

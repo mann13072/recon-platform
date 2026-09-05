@@ -1,0 +1,200 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pr-checks:
+    name: PR checks
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: recon
+          POSTGRES_PASSWORD: recon
+          POSTGRES_DB: recon_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U recon -d recon_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://recon:recon@localhost:5432/recon_test
+      REDIS_URL: redis://localhost:6379/0
+      AUTH_DEV_SECRET: ci-only-development-signing-secret-at-least-32-chars
+      CREDENTIAL_ENCRYPTION_KEY: ci-only-credential-key-at-least-32-characters
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        if: ${{ hashFiles('apps/web/package.json') != '' }}
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[dev]" pip-audit
+
+      # Specification section 81 requires the following checks in this order.
+      - name: 1. Format check
+        run: ruff format --check .
+
+      - name: 2. Lint
+        run: ruff check .
+
+      - name: 3. Type check
+        run: mypy apps packages
+
+      - name: 4. Unit tests
+        run: pytest tests/unit -q
+
+      - name: 5. Integration tests
+        run: pytest tests/integration -q
+
+      - name: 6. Golden accounting cases
+        run: pytest tests/accounting_golden_cases -q
+
+      - name: 7. Migration validation
+        env:
+          DATABASE_URL: sqlite+pysqlite:///./migration-ci.sqlite3
+        run: |
+          rm -f migration-ci.sqlite3
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+      - name: 8. Dependency scan
+        run: pip-audit
+
+      - name: 9. Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 10. Container scan
+        run: |
+          docker build --tag recon-api:scan --file infra/docker/api.Dockerfile .
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.58.2 image --exit-code 1 --severity HIGH,CRITICAL recon-api:scan
+
+      - name: 11. Frontend build
+        if: ${{ hashFiles('apps/web/package.json') != '' }}
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run build
+
+      - name: 12. Backend build
+        run: docker build --file infra/docker/api.Dockerfile .
+
+  build-checklist:
+    name: Pre-production build checklist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project
+        run: python -m pip install -e ".[dev]"
+      - name: Verify all 26 specification checks
+        run: python scripts/verify_build_checklist.py
+
+  immutable-image:
+    name: Build immutable image
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [pr-checks, build-checklist]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set immutable image reference
+        id: image
+        shell: bash
+        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          push: true
+          tags: ${{ steps.image.outputs.ref }}
+
+  deploy-staging:
+    name: Deploy staging and smoke test
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: immutable-image
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy immutable image to staging
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.STAGING_DEPLOY_WEBHOOK }}
+          IMAGE: ${{ needs.immutable-image.outputs.image }}
+        run: |
+          test -n "$DEPLOY_WEBHOOK"
+          jq -n --arg image "$IMAGE" '{image: $image}' > deployment.json
+          curl --fail --show-error --silent \
+            --header "Content-Type: application/json" \
+            --data @deployment.json "$DEPLOY_WEBHOOK"
+      - name: Run staging smoke tests
+        env:
+          SMOKE_URL: ${{ vars.STAGING_SMOKE_URL }}
+        run: |
+          test -n "$SMOKE_URL"
+          curl --fail --show-error --silent --retry 10 --retry-delay 6 \
+            "$SMOKE_URL/health/ready" | tee readiness.json
+          jq -e '.status == "ok"' readiness.json
+
+  deploy-production:
+    name: Manual approval and production deployment
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [immutable-image, deploy-staging]
+    runs-on: ubuntu-latest
+    # Configure required reviewers for this environment in GitHub. Their
+    # approval is the manual gate between staging smoke tests and production.
+    environment: production
+    steps:
+      - name: Deploy the same immutable image to production
+        env:
+          DEPLOY_WEBHOOK: ${{ secrets.PRODUCTION_DEPLOY_WEBHOOK }}
+          IMAGE: ${{ needs.immutable-image.outputs.image }}
+        run: |
+          test -n "$DEPLOY_WEBHOOK"
+          jq -n --arg image "$IMAGE" '{image: $image}' > deployment.json
+          curl --fail --show-error --silent \
+            --header "Content-Type: application/json" \
+            --data @deployment.json "$DEPLOY_WEBHOOK"

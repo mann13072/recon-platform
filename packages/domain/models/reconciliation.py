@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -95,9 +96,7 @@ class DecisionThresholds(BaseModel):
     @model_validator(mode="after")
     def _validate(self) -> DecisionThresholds:
         if not 0.0 < self.suggested_match_threshold <= self.auto_match_threshold <= 1.0:
-            raise ValueError(
-                "thresholds must satisfy 0 < suggest <= auto <= 1"
-            )
+            raise ValueError("thresholds must satisfy 0 < suggest <= auto <= 1")
         if self.minimum_candidate_margin < 0:
             raise ValueError("minimum_candidate_margin must not be negative")
         return self
@@ -135,7 +134,7 @@ class ReconciliationConfig(BaseModel):
     config_version: str = "v1"
 
     @classmethod
-    def from_yaml_dict(cls, data: dict) -> ReconciliationConfig:
+    def from_yaml_dict(cls, data: dict[str, Any]) -> ReconciliationConfig:
         """Load the exact YAML shape used in the spec and the docs."""
         block = data.get("reconciliation", data)
         period = block.get("period") or {}

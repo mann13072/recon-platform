@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from contextlib import suppress
 from typing import Any
 
 from celery import Celery, Task
@@ -85,9 +86,7 @@ class TenantTask(Task):
 
         from packages.observability.tracing import correlation_id, span
 
-        with correlation_id(uuid.UUID(str(correlation))), span(
-            self.name, tenant=str(tenant_id)
-        ):
+        with correlation_id(uuid.UUID(str(correlation))), span(self.name, tenant=str(tenant_id)):
             return super().__call__(*args, **kwargs)
 
 
@@ -106,10 +105,8 @@ def _log_failure(task_id: str, exception: BaseException, sender: Task, **_: Any)
             "error": f"{type(exception).__name__}: {exception}",
         },
     )
-    try:
+    with suppress(KeyError):  # pragma: no cover - metric name guard
         registry.increment("ingestion_failures", reason=type(exception).__name__)
-    except KeyError:  # pragma: no cover - metric name guard
-        pass
 
 
 # Importing the task modules registers them with the app.

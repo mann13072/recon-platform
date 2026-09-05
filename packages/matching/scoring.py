@@ -22,8 +22,6 @@ from packages.domain.dates import DateField, date_distance_days
 from packages.domain.models.matching import (
     CandidateMatch,
     MatchFeatures,
-    MatchReason,
-    MatchWarning,
     ScoredCandidate,
 )
 from packages.domain.models.reconciliation import ReconciliationConfig
@@ -83,7 +81,10 @@ def extract_features(
     if not invoice_exact:
         invoice_exact = bool(
             (a.normalized_invoice_number and a.normalized_invoice_number == b.normalized_reference)
-            or (b.normalized_invoice_number and b.normalized_invoice_number == a.normalized_reference)
+            or (
+                b.normalized_invoice_number
+                and b.normalized_invoice_number == a.normalized_reference
+            )
         )
 
     counterparty_exact = bool(
@@ -110,9 +111,7 @@ def extract_features(
         and a.external_transaction_id.upper() == b.external_transaction_id.upper()
     )
 
-    description_similarity = token_set_ratio(
-        a.normalized_description, b.normalized_description
-    )
+    description_similarity = token_set_ratio(a.normalized_description, b.normalized_description)
 
     contains_reference = any(
         description_contains(source.description, identifier)
@@ -297,9 +296,11 @@ class Scorer:
             return False
         if filters.direction_opposite and (a.amount > 0) == (b.amount > 0):
             return False
-        if filters.max_amount_difference is not None:
-            if abs(a.amount - b.amount) > filters.max_amount_difference:
-                return False
+        if (
+            filters.max_amount_difference is not None
+            and abs(a.amount - b.amount) > filters.max_amount_difference
+        ):
+            return False
         if filters.date_window_days is not None:
             distance = date_distance_days(
                 a.date_for(filters.date_field) or a.best_date,

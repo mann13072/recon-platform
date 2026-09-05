@@ -51,15 +51,11 @@ class ExceptionService:
 
     @property
     def repository(self) -> ExceptionRepository:
-        return ExceptionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return ExceptionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     @property
     def transactions(self) -> TransactionRepository:
-        return TransactionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return TransactionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     # -- reads -------------------------------------------------------------
     def get(self, exception_id: UUID) -> ExceptionRecord:
@@ -318,9 +314,7 @@ class ExceptionService:
             return {
                 "available": False,
                 "reason": (
-                    outcome.ai.call.failure_reason
-                    if outcome.ai
-                    else outcome.ai_skipped_reason
+                    outcome.ai.call.failure_reason if outcome.ai else outcome.ai_skipped_reason
                 ),
                 "category": record.category.value,
             }
@@ -370,9 +364,7 @@ class ExceptionService:
 
         self.context.audit.record(
             self.context.audit_context(),
-            AuditAction.AI_SUGGESTION_CREATED
-            if accepted
-            else AuditAction.AI_SUGGESTION_REJECTED,
+            AuditAction.AI_SUGGESTION_CREATED if accepted else AuditAction.AI_SUGGESTION_REJECTED,
             "EXCEPTION",
             exception_id,
             metadata={"decision": "accepted" if accepted else "rejected"},

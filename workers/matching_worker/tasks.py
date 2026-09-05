@@ -13,9 +13,9 @@ from datetime import date
 from typing import Any
 from uuid import UUID
 
+from packages.observability import registry
 from workers.celery_app import TenantTask, celery_app
 from workers.context import system_context
-from packages.observability import registry
 
 logger = logging.getLogger("recon.worker.matching")
 
@@ -53,9 +53,7 @@ def run_reconciliation(
             )
 
         summary = outcome.summary
-        registry.set(
-            "auto_match_rate", summary.auto_match_rate, reconciliation=reconciliation_id
-        )
+        registry.set("auto_match_rate", summary.auto_match_rate, reconciliation=reconciliation_id)
         registry.set(
             "high_value_unmatched_count",
             float(summary.high_risk_exception_count),
@@ -122,9 +120,7 @@ def send_exception_reminder(
         aging = service.aging(UUID(run_id) if run_id else None)
 
         if aging["oldest_age_days"] is not None:
-            registry.observe(
-                "exception_aging", float(aging["oldest_age_days"]), tenant=tenant_id
-            )
+            registry.observe("exception_aging", float(aging["oldest_age_days"]), tenant=tenant_id)
 
         return {
             "escalations": len(escalations),

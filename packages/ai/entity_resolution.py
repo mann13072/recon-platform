@@ -88,9 +88,7 @@ class EntityResolver:
     def add_entity(self, entity: CanonicalEntity) -> None:
         self.entities[entity.id] = entity
 
-    def add_alias(
-        self, alias: str, entity_id: UUID, *, approved_by: UUID | None = None
-    ) -> Alias:
+    def add_alias(self, alias: str, entity_id: UUID, *, approved_by: UUID | None = None) -> Alias:
         record = Alias(
             alias=alias,
             normalized_alias=normalize_name(alias) or alias.upper(),
@@ -112,27 +110,20 @@ class EntityResolver:
     ) -> Resolution:
         normalized = normalize_name(observed)
         if not normalized:
-            return Resolution(
-                None, "none", 0.0, explanation="No counterparty name supplied."
-            )
+            return Resolution(None, "none", 0.0, explanation="No counterparty name supplied.")
 
         # 1. exact match against a canonical entity name
         for entity in self._sorted_entities():
             if entity.normalized_name == normalized:
-                return Resolution(
-                    entity, "exact_name", 1.0, explanation="Exact name match."
-                )
+                return Resolution(entity, "exact_name", 1.0, explanation="Exact name match.")
 
         # 2. approved alias
         for alias in sorted(self.aliases, key=lambda a: a.normalized_alias):
-            if (
-                alias.status == AliasStatus.APPROVED
-                and alias.normalized_alias == normalized
-            ):
-                entity = self.entities.get(alias.entity_id)
-                if entity is not None:
+            if alias.status == AliasStatus.APPROVED and alias.normalized_alias == normalized:
+                alias_entity = self.entities.get(alias.entity_id)
+                if alias_entity is not None:
                     return Resolution(
-                        entity,
+                        alias_entity,
                         "approved_alias",
                         1.0,
                         explanation=f"'{alias.alias}' is an approved alias.",
@@ -154,9 +145,7 @@ class EntityResolver:
                 "fuzzy",
                 round(best_score, 4),
                 requires_human_approval=True,
-                pending_alias=self._pending(
-                    normalized, observed or "", best_entity.id, "fuzzy"
-                ),
+                pending_alias=self._pending(normalized, observed or "", best_entity.id, "fuzzy"),
                 explanation=(
                     f"'{observed}' is {best_score:.0%} similar to "
                     f"'{best_entity.name}'. A human must confirm before this "
@@ -172,9 +161,7 @@ class EntityResolver:
                     {
                         "counterparty_name": observed,
                         "normalized_counterparty": normalized,
-                        "candidate_entities": [
-                            e.name for e in self._sorted_entities()[:20]
-                        ],
+                        "candidate_entities": [e.name for e in self._sorted_entities()[:20]],
                     },
                     settings,
                 )
@@ -224,15 +211,11 @@ class EntityResolver:
             approved_by=approved_by,
             created_at=utc_now(),
         )
-        self.aliases = [
-            a for a in self.aliases if a.normalized_alias != alias.normalized_alias
-        ]
+        self.aliases = [a for a in self.aliases if a.normalized_alias != alias.normalized_alias]
         self.aliases.append(approved)
         return approved
 
-    def _pending(
-        self, normalized: str, observed: str, entity_id: UUID, source: str
-    ) -> Alias:
+    def _pending(self, normalized: str, observed: str, entity_id: UUID, source: str) -> Alias:
         return Alias(
             alias=observed,
             normalized_alias=normalized,
@@ -245,9 +228,7 @@ class EntityResolver:
 
     def _sorted_entities(self) -> list[CanonicalEntity]:
         # Deterministic order, so an ambiguous fuzzy result is stable.
-        return sorted(
-            self.entities.values(), key=lambda e: (e.normalized_name, str(e.id))
-        )
+        return sorted(self.entities.values(), key=lambda e: (e.normalized_name, str(e.id)))
 
     def _entity_by_name(self, name: str) -> CanonicalEntity | None:
         normalized = normalize_name(name)

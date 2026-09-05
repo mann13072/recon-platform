@@ -20,6 +20,7 @@ import os
 import struct
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any
 
 __all__ = [
     "CredentialCipher",
@@ -42,8 +43,7 @@ class DecryptionError(ValueError):
 
 class KeyProvider(ABC):
     @abstractmethod
-    def key_id(self) -> str:
-        ...
+    def key_id(self) -> str: ...
 
     @abstractmethod
     def data_key(self, context: str) -> bytes:
@@ -65,9 +65,7 @@ class EnvKeyProvider(KeyProvider):
 
     def __post_init__(self) -> None:
         if not self.master_secret or len(self.master_secret) < 32:
-            raise ValueError(
-                "CREDENTIAL_ENCRYPTION_KEY must be at least 32 characters"
-            )
+            raise ValueError("CREDENTIAL_ENCRYPTION_KEY must be at least 32 characters")
 
     def key_id(self) -> str:
         digest = hashlib.sha256(self.master_secret.encode("utf-8")).hexdigest()[:16]
@@ -103,7 +101,7 @@ class CredentialCipher:
 
         aead = _load_aesgcm()
         if aead is not None:
-            ciphertext = aead(key).encrypt(nonce[:12], data, context.encode("utf-8"))
+            ciphertext = bytes(aead(key).encrypt(nonce[:12], data, context.encode("utf-8")))
             return _VERSION + b"\x01" + nonce + ciphertext
 
         stream = _keystream(key, nonce, len(data))
@@ -124,11 +122,11 @@ class CredentialCipher:
             aead = _load_aesgcm()
             if aead is None:
                 raise DecryptionError(
-                    "this credential needs AES-GCM but the cryptography package "
-                    "is not installed"
+                    "this credential needs AES-GCM but the cryptography package is not installed"
                 )
             try:
-                return aead(key).decrypt(nonce[:12], body, context.encode("utf-8")).decode("utf-8")
+                plaintext = bytes(aead(key).decrypt(nonce[:12], body, context.encode("utf-8")))
+                return plaintext.decode("utf-8")
             except Exception as exc:
                 raise DecryptionError("credential failed authentication") from exc
 
@@ -149,7 +147,7 @@ class CredentialCipher:
         return self.keys.key_id()
 
 
-def _load_aesgcm():  # type: ignore[no-untyped-def]
+def _load_aesgcm() -> type[Any] | None:
     try:
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     except ImportError:  # pragma: no cover - depends on the environment

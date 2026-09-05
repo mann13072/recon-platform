@@ -33,9 +33,7 @@ def parse_file(self: Any, *, tenant_id: str, file_id: str, correlation_id: str) 
 
 
 @celery_app.task(base=TenantTask, bind=True, name="recon.ingestion.normalize_source")
-def normalize_source(
-    self: Any, *, tenant_id: str, file_id: str, correlation_id: str
-) -> dict:
+def normalize_source(self: Any, *, tenant_id: str, file_id: str, correlation_id: str) -> dict:
     """Normalise a mapped file into canonical transactions.
 
     Safe to retry: duplicates are skipped rather than inserted.
@@ -56,9 +54,7 @@ def normalize_source(
 
 
 @celery_app.task(base=TenantTask, bind=True, name="recon.ingestion.run_data_quality")
-def run_data_quality(
-    self: Any, *, tenant_id: str, file_id: str, correlation_id: str
-) -> dict:
+def run_data_quality(self: Any, *, tenant_id: str, file_id: str, correlation_id: str) -> dict:
     """Re-run the quality gate without re-ingesting."""
     del self, correlation_id
     from apps.api.app.services.ingestion import IngestionService

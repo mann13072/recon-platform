@@ -67,23 +67,25 @@ class ObjectStorage(ABC):
         """Store bytes and return the key."""
 
     @abstractmethod
-    def get(self, key: str) -> bytes:
-        ...
+    def get(self, key: str) -> bytes: ...
 
     @abstractmethod
-    def exists(self, key: str) -> bool:
-        ...
+    def exists(self, key: str) -> bool: ...
 
     @abstractmethod
-    def delete(self, key: str) -> None:
-        ...
+    def delete(self, key: str) -> None: ...
 
     @abstractmethod
     def presigned_url(self, key: str, *, expires_seconds: int = 900) -> str:
         """A short-lived download URL (spec section 53: signed object-storage URLs)."""
 
     def put_content(
-        self, tenant_id: UUID, kind: str, data: bytes, *, extension: str = "",
+        self,
+        tenant_id: UUID,
+        kind: str,
+        data: bytes,
+        *,
+        extension: str = "",
         content_type: str = "application/octet-stream",
     ) -> tuple[str, str]:
         """Store content-addressed. Returns ``(key, sha256)``."""

@@ -20,9 +20,7 @@ logger = logging.getLogger("recon.worker.export")
 
 
 @celery_app.task(base=TenantTask, bind=True, name="recon.export.build_audit_export")
-def build_audit_export(
-    self: Any, *, tenant_id: str, run_id: str, correlation_id: str
-) -> dict:
+def build_audit_export(self: Any, *, tenant_id: str, run_id: str, correlation_id: str) -> dict:
     """Assemble a run's audit package and store it.
 
     Idempotent by content: the key is derived from the archive's own hash, so

@@ -67,9 +67,7 @@ def classify_pair(
 
     # Processor fee: the difference is exactly the reported fee.
     for gross_side, other in ((a, b), (b, a)):
-        if fee_explains_difference(
-            gross_side.gross_amount, other.amount, gross_side.fee_amount
-        ):
+        if fee_explains_difference(gross_side.gross_amount, other.amount, gross_side.fee_amount):
             return Classification(
                 ExceptionCategory.PROCESSOR_FEE,
                 0.97,
@@ -150,16 +148,14 @@ def classify_pair(
                 ExceptionCategory.OVERPAYMENT,
                 0.7,
                 ("AMOUNT_OVER",),
-                f"The received amount exceeds the expected {b.amount} by "
-                f"{magnitude}.",
+                f"The received amount exceeds the expected {b.amount} by {magnitude}.",
             )
 
     return Classification(
         ExceptionCategory.WRONG_AMOUNT,
         0.5,
         ("AMOUNT_DISAGREES",),
-        f"The records differ by {a.currency} {magnitude} for no deterministic "
-        "reason found so far.",
+        f"The records differ by {a.currency} {magnitude} for no deterministic reason found so far.",
     )
 
 
@@ -203,15 +199,12 @@ def classify_unmatched(
             "The description indicates a reversal with no counterpart recorded.",
         )
     if any(token in description for token in ("FEE", "CHARGE", "COMMISSION", "GEBUEHR")):
-        category = (
-            ExceptionCategory.BANK_FEE if side == "A" else ExceptionCategory.PROCESSOR_FEE
-        )
+        category = ExceptionCategory.BANK_FEE if side == "A" else ExceptionCategory.PROCESSOR_FEE
         return Classification(
             category,
             0.75,
             ("DESCRIPTION_INDICATES_FEE",),
-            "The description indicates a fee that has not been posted on the "
-            "other side.",
+            "The description indicates a fee that has not been posted on the other side.",
         )
     if any(token in description for token in ("WITHHOLDING", "WHT", "TAX")):
         return Classification(
@@ -226,8 +219,7 @@ def classify_unmatched(
             ExceptionCategory.DATA_QUALITY,
             0.9,
             ("NO_USABLE_DATE",),
-            "The record has no usable date, so date-based rules could not apply "
-            "to it.",
+            "The record has no usable date, so date-based rules could not apply to it.",
         )
 
     if not (
@@ -306,9 +298,7 @@ class ExceptionClassifier:
         )
 
 
-def _title_for(
-    category: ExceptionCategory, exposure: Decimal, currency: str | None
-) -> str:
+def _title_for(category: ExceptionCategory, exposure: Decimal, currency: str | None) -> str:
     label = category.value.replace("_", " ").title()
     if currency:
         return f"{label} - {currency} {exposure:,.2f}"

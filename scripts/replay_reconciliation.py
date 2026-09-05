@@ -29,9 +29,7 @@ def main() -> int:
     parser.add_argument("run_id", nargs="?", help="the run to replay")
     parser.add_argument("--all", action="store_true", help="replay every run")
     parser.add_argument("--tenant", help="restrict --all to one tenant")
-    parser.add_argument(
-        "--database-url", default="sqlite+pysqlite:///./recon-demo.sqlite3"
-    )
+    parser.add_argument("--database-url", default="sqlite+pysqlite:///./recon-demo.sqlite3")
     args = parser.parse_args()
 
     if not args.run_id and not args.all:
@@ -83,9 +81,7 @@ def main() -> int:
                 failures += 1
                 continue
 
-            definitions = ReconciliationRepository(
-                session=session, tenant_id=run.tenant_id
-            )
+            definitions = ReconciliationRepository(session=session, tenant_id=run.tenant_id)
             definition = definitions.get(run.reconciliation_id)
             if definition is None:
                 print(f"{str(run.id):<38} {'-':<18} {'-':<18} {'NO DEFINITION':<14} -")
@@ -98,19 +94,15 @@ def main() -> int:
                 "stripe_payout": stripe_payout_template()[1],
             }.get(definition.template or "", default_rule_set())
 
-            transactions = TransactionRepository(
-                session=session, tenant_id=run.tenant_id
-            )
-            side_a = transactions.get_many(
-                [UUID(str(i)) for i in snapshot.side_a_transaction_ids]
-            )
-            side_b = transactions.get_many(
-                [UUID(str(i)) for i in snapshot.side_b_transaction_ids]
-            )
+            transactions = TransactionRepository(session=session, tenant_id=run.tenant_id)
+            side_a = transactions.get_many([UUID(str(i)) for i in snapshot.side_a_transaction_ids])
+            side_b = transactions.get_many([UUID(str(i)) for i in snapshot.side_b_transaction_ids])
 
             missing = (
-                len(snapshot.side_a_transaction_ids) - len(side_a)
-                + len(snapshot.side_b_transaction_ids) - len(side_b)
+                len(snapshot.side_a_transaction_ids)
+                - len(side_a)
+                + len(snapshot.side_b_transaction_ids)
+                - len(side_b)
             )
 
             result = MatchingEngine(config, rule_set).run(

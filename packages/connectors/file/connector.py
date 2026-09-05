@@ -47,7 +47,7 @@ class FileConnector(Connector):
         """Nothing to authenticate: the caller already had the bytes."""
         return None
 
-    async def list_accounts(self) -> list[dict]:
+    async def list_accounts(self) -> list[dict[str, Any]]:
         return [
             {
                 "id": self.context.config.get("account_id", "default"),
@@ -61,7 +61,7 @@ class FileConnector(Connector):
         start: datetime,
         end: datetime,
         cursor: str | None = None,
-    ) -> AsyncIterator[dict]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """Yield one dict per source row, tagged with its file and row number.
 
         The row number is part of the identity, so two identical rows in one
@@ -76,16 +76,16 @@ class FileConnector(Connector):
 
     async def fetch_documents(
         self, start: datetime, end: datetime
-    ) -> AsyncIterator[dict]:
+    ) -> AsyncIterator[dict[str, Any]]:
         del start, end
         return
         yield {}  # pragma: no cover - makes this an async generator
 
-    async def healthcheck(self) -> dict:
+    async def healthcheck(self) -> dict[str, Any]:
         self.record_success()
         return self._health.to_dict()
 
-    def normalize(self, raw: dict) -> CanonicalTransaction:
+    def normalize(self, raw: dict[str, Any]) -> CanonicalTransaction:
         payload = {k: v for k, v in raw.items() if not k.startswith("__")}
         result = apply_mapping(
             [payload],
@@ -102,9 +102,7 @@ class FileConnector(Connector):
         record_id = f"{raw.get('__file__', 'file')}:{raw.get('__row__', 0)}"
         return transaction.model_copy(
             update={
-                "id": uuid5(
-                    STRIPE_NAMESPACE, f"{self.context.connection_id}:{record_id}"
-                ),
+                "id": uuid5(STRIPE_NAMESPACE, f"{self.context.connection_id}:{record_id}"),
                 "source_record_id": record_id,
                 "source_checksum": compute_checksum(payload),
                 "imported_at": utc_now(),

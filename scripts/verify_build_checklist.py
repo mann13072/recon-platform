@@ -180,9 +180,9 @@ def _rules_versioned() -> str:
 
 @check(7, "Confidence separate from ambiguity", "18")
 def _confidence_vs_ambiguity() -> str:
-    from tests.unit.test_decision_policy import config, scored
     from packages.domain.enums import DecisionOutcome
     from packages.matching.ambiguity import decide
+    from tests.unit.test_decision_policy import config, scored
 
     result = decide(scored(0.96), scored(0.95), config())
     if result.outcome is DecisionOutcome.AUTO_MATCH:
@@ -209,9 +209,7 @@ def _grouping_bounded() -> str:
     from packages.matching.grouping import find_subsets
 
     amounts = [(f"L{i}", i + 1) for i in range(60)]
-    result = find_subsets(
-        amounts, 900, 0, max_group_size=12, node_budget=500, max_solutions=99
-    )
+    result = find_subsets(amounts, 900, 0, max_group_size=12, node_budget=500, max_solutions=99)
     if result.exhausted:
         raise AssertionError("the node budget did not stop an oversized search")
     if result.unique:
@@ -249,7 +247,7 @@ def _override_reason() -> str:
 @check(12, "Audit events immutable", "35")
 def _audit_immutable() -> str:
     from packages.audit.events import AuditEvent, verify_chain
-    from packages.audit.logger import InMemoryAuditLog, AuditContext
+    from packages.audit.logger import AuditContext, InMemoryAuditLog
     from packages.domain.enums import ActorType, AuditAction
 
     log = InMemoryAuditLog()
@@ -312,9 +310,7 @@ def _high_risk_approvals() -> str:
         currency="EUR",
     )
     try:
-        assert_can_approve_match(
-            principal, subject, materiality_threshold=Decimal("50000.00")
-        )
+        assert_can_approve_match(principal, subject, materiality_threshold=Decimal("50000.00"))
     except SoDViolation:
         return "a preparer cannot approve their own material adjustment"
     raise AssertionError("self-approval of a material item was permitted")
@@ -392,7 +388,8 @@ def _ai_disabled() -> str:
 
     try:
         prepare_payload(
-            "classify_exception", {"amount": "1"},
+            "classify_exception",
+            {"amount": "1"},
             TenantAISettings(policy=AIPolicy.AI_DISABLED),
         )
     except AIDisabledError:
@@ -428,15 +425,13 @@ def _ai_cannot_approve() -> str:
     from packages.controls import FORBIDDEN_FOR_NON_HUMAN, Principal
     from packages.domain.enums import ActorType, Role
 
-    ai = Principal(
-        tenant_id=uuid4(), actor_type=ActorType.AI_ASSISTANT, roles=frozenset(Role)
-    )
+    ai = Principal(tenant_id=uuid4(), actor_type=ActorType.AI_ASSISTANT, roles=frozenset(Role))
     held = [p for p in FORBIDDEN_FOR_NON_HUMAN if ai.has(p)]
     if held:
         raise AssertionError(f"the AI actor holds {held}")
 
-    from packages.exceptions.workflow import can_transition
     from packages.domain.enums import ExceptionStatus
+    from packages.exceptions.workflow import can_transition
 
     if can_transition(ExceptionStatus.RESOLVED, ExceptionStatus.CLOSED, ActorType.AI_ASSISTANT):
         raise AssertionError("AI can close an exception")
@@ -447,9 +442,20 @@ def _ai_cannot_approve() -> str:
 def _golden_tests() -> str:
     fixtures = ROOT / "tests/reconciliation_fixtures"
     required = {
-        "exact", "timing", "duplicates", "partial_payments", "split_payments",
-        "fees", "refunds", "chargebacks", "reversals", "fx",
-        "processor_settlements", "rounding", "one_to_many", "many_to_one",
+        "exact",
+        "timing",
+        "duplicates",
+        "partial_payments",
+        "split_payments",
+        "fees",
+        "refunds",
+        "chargebacks",
+        "reversals",
+        "fx",
+        "processor_settlements",
+        "rounding",
+        "one_to_many",
+        "many_to_one",
         "many_to_many",
     }
     present = {d.name for d in fixtures.iterdir() if d.is_dir()}
@@ -459,8 +465,11 @@ def _golden_tests() -> str:
 
     for name in required:
         for file in (
-            "source_a.csv", "source_b.csv", "expected_matches.json",
-            "expected_exceptions.json", "rule_config.yaml",
+            "source_a.csv",
+            "source_b.csv",
+            "expected_matches.json",
+            "expected_exceptions.json",
+            "rule_config.yaml",
         ):
             if not (fixtures / name / file).exists():
                 raise AssertionError(f"{name} is missing {file}")
@@ -481,10 +490,7 @@ def _benchmark() -> str:
             f"candidate generation produced {row.candidates_per_row} per row, "
             "which suggests blocking has stopped working"
         )
-    return (
-        f"500 rows/side in {row.engine_seconds}s, "
-        f"{row.candidates_per_row} candidates per row"
-    )
+    return f"500 rows/side in {row.engine_seconds}s, {row.candidates_per_row} candidates per row"
 
 
 @check(23, "Security logging", "60")
@@ -510,9 +516,15 @@ def _security_logging() -> str:
 def _audit_export() -> str:
     source = (ROOT / "packages/audit/evidence.py").read_text("utf-8")
     required = [
-        "reconciliation-summary.json", "source-manifest.csv", "matched-items.csv",
-        "exceptions.csv", "approvals.csv", "rule-config.json", "model-config.json",
-        "audit-events.jsonl", "evidence/manifest.csv",
+        "reconciliation-summary.json",
+        "source-manifest.csv",
+        "matched-items.csv",
+        "exceptions.csv",
+        "approvals.csv",
+        "rule-config.json",
+        "model-config.json",
+        "audit-events.jsonl",
+        "evidence/manifest.csv",
     ]
     missing = [name for name in required if name not in source]
     if missing:
@@ -525,10 +537,18 @@ def _dashboard_metrics() -> str:
     from packages.domain.models.reconciliation import RunSummary
 
     required = {
-        "side_a_balance", "side_b_balance", "difference", "matched_amount",
-        "matched_transaction_count", "auto_matched_count", "human_approved_count",
-        "suggested_count", "exception_count", "high_risk_exception_count",
-        "oldest_exception_age_days", "completion_pct",
+        "side_a_balance",
+        "side_b_balance",
+        "difference",
+        "matched_amount",
+        "matched_transaction_count",
+        "auto_matched_count",
+        "human_approved_count",
+        "suggested_count",
+        "exception_count",
+        "high_risk_exception_count",
+        "oldest_exception_age_days",
+        "completion_pct",
     }
     missing = required - set(RunSummary.model_fields)
     if missing:
@@ -550,8 +570,7 @@ def _false_match_kpi() -> str:
     summary = RunSummary(run_id=uuid4(), reconciliation_id=uuid4(), status="CLOSED")
     if summary.false_match_rate is not None:
         raise AssertionError(
-            "an unmeasured false-match rate defaults to a number, implying a "
-            "proven zero"
+            "an unmeasured false-match rate defaults to a number, implying a proven zero"
         )
     return "reported alongside the automation rate; unmeasured reads as null, not zero"
 
@@ -611,9 +630,7 @@ def main() -> int:
     print(f"{passed}/{len(results)} checklist items pass")
 
     if args.json:
-        args.json.write_text(
-            json.dumps([asdict(r) for r in results], indent=2), encoding="utf-8"
-        )
+        args.json.write_text(json.dumps([asdict(r) for r in results], indent=2), encoding="utf-8")
         print(f"wrote {args.json}")
 
     return 0 if passed == len(results) else 1

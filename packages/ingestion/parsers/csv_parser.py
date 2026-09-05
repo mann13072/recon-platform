@@ -120,9 +120,7 @@ def parse_csv(
             continue
         total += 1
         if len(raw_row) != len(columns):
-            skipped.append(
-                (line_number, f"expected {len(columns)} fields, found {len(raw_row)}")
-            )
+            skipped.append((line_number, f"expected {len(columns)} fields, found {len(raw_row)}"))
             continue
         rows.append({col: (raw_row[i] or "").strip() for i, col in enumerate(columns)})
         if max_rows is not None and len(rows) >= max_rows:

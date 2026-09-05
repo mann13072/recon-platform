@@ -79,9 +79,7 @@ class RetryPolicy:
     max_delay_seconds: float = 60.0
 
     def delay_for(self, attempt: int, *, rng: random.Random | None = None) -> float:
-        ceiling = min(
-            self.max_delay_seconds, self.base_delay_seconds * (2 ** max(attempt - 1, 0))
-        )
+        ceiling = min(self.max_delay_seconds, self.base_delay_seconds * (2 ** max(attempt - 1, 0)))
         source = rng or random
         return source.uniform(0.0, ceiling)
 
@@ -170,12 +168,8 @@ class ConnectorHealth:
         return {
             "state": self.state.value,
             "detail": self.detail,
-            "last_success_at": (
-                self.last_success_at.isoformat() if self.last_success_at else None
-            ),
-            "last_attempt_at": (
-                self.last_attempt_at.isoformat() if self.last_attempt_at else None
-            ),
+            "last_success_at": (self.last_success_at.isoformat() if self.last_success_at else None),
+            "last_attempt_at": (self.last_attempt_at.isoformat() if self.last_attempt_at else None),
             "next_retry_at": self.next_retry_at.isoformat() if self.next_retry_at else None,
             "error_category": self.error_category,
             "action_required": self.action_required,
@@ -226,8 +220,7 @@ class Connector(ABC):
         """
 
     @abstractmethod
-    async def list_accounts(self) -> list[dict]:
-        ...
+    async def list_accounts(self) -> list[dict[str, Any]]: ...
 
     @abstractmethod
     def fetch_transactions(
@@ -236,7 +229,7 @@ class Connector(ABC):
         start: datetime,
         end: datetime,
         cursor: str | None = None,
-    ) -> AsyncIterator[dict]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """Yield raw provider payloads. Never normalised, never filtered."""
 
     @abstractmethod
@@ -244,15 +237,13 @@ class Connector(ABC):
         self,
         start: datetime,
         end: datetime,
-    ) -> AsyncIterator[dict]:
-        ...
+    ) -> AsyncIterator[dict[str, Any]]: ...
 
     @abstractmethod
-    async def healthcheck(self) -> dict:
-        ...
+    async def healthcheck(self) -> dict[str, Any]: ...
 
     @abstractmethod
-    def normalize(self, raw: dict) -> CanonicalTransaction:
+    def normalize(self, raw: dict[str, Any]) -> CanonicalTransaction:
         """Map one raw payload to the canonical model.
 
         Implementations must preserve the untouched payload in ``raw_payload``
@@ -276,10 +267,7 @@ class Connector(ABC):
     def record_failure(self, error: Exception) -> ConnectorHealth:
         """Translate an exception into user-facing health state."""
         now = utc_now()
-        if isinstance(error, ConnectorError):
-            state = error.state
-        else:
-            state = ConnectorState.FAILED
+        state = error.state if isinstance(error, ConnectorError) else ConnectorState.FAILED
 
         action = {
             ConnectorState.AUTH_EXPIRED: (
@@ -331,9 +319,7 @@ class Connector(ABC):
                     result.errors.append(f"payload could not be normalised: {exc}")
                     continue
                 result.normalized += 1
-            result.cursor = self.context.cursor.advance(
-                self.context.cursor.value, watermark=end
-            )
+            result.cursor = self.context.cursor.advance(self.context.cursor.value, watermark=end)
             self.record_success()
         except Exception as exc:
             result.health = self.record_failure(exc)

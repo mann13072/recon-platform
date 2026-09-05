@@ -39,8 +39,24 @@ __all__ = ["StripeConnector", "StripeTransport", "SettlementComponent", "decompo
 
 # Stripe stores money in minor units; zero-decimal currencies are the exception.
 _ZERO_DECIMAL = frozenset(
-    {"BIF", "CLP", "DJF", "GNF", "JPY", "KMF", "KRW", "MGA", "PYG", "RWF",
-     "UGX", "VND", "VUV", "XAF", "XOF", "XPF"}
+    {
+        "BIF",
+        "CLP",
+        "DJF",
+        "GNF",
+        "JPY",
+        "KMF",
+        "KRW",
+        "MGA",
+        "PYG",
+        "RWF",
+        "UGX",
+        "VND",
+        "VUV",
+        "XAF",
+        "XOF",
+        "XPF",
+    }
 )
 
 STRIPE_NAMESPACE = UUID("2a6b1f2e-7c44-4d19-b0c9-9d4e2a5f1c33")
@@ -49,8 +65,7 @@ STRIPE_NAMESPACE = UUID("2a6b1f2e-7c44-4d19-b0c9-9d4e2a5f1c33")
 class StripeTransport(Protocol):
     """The HTTP surface this connector needs."""
 
-    async def get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
-        ...
+    async def get(self, path: str, params: dict[str, Any]) -> dict[str, Any]: ...
 
 
 def _from_minor_units(amount: int, currency: str) -> Decimal:
@@ -79,8 +94,7 @@ class SettlementComponent:
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
         return (
-            f"SettlementComponent({self.settlement_id}, {self.type}, "
-            f"{self.amount} {self.currency})"
+            f"SettlementComponent({self.settlement_id}, {self.type}, {self.amount} {self.currency})"
         )
 
 
@@ -127,11 +141,9 @@ class StripeConnector(Connector):
     # -- lifecycle ---------------------------------------------------------
     async def authenticate(self) -> None:
         if not self.context.credentials.get("access_token"):
-            raise ConnectorAuthError(
-                "This Stripe connection has no access token. Reconnect it."
-            )
+            raise ConnectorAuthError("This Stripe connection has no access token. Reconnect it.")
 
-    async def list_accounts(self) -> list[dict]:
+    async def list_accounts(self) -> list[dict[str, Any]]:
         response = await self._call("/v1/balance", {})
         return [
             {
@@ -148,7 +160,7 @@ class StripeConnector(Connector):
         start: datetime,
         end: datetime,
         cursor: str | None = None,
-    ) -> AsyncIterator[dict]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """Page through payouts in the window, newest first.
 
         Stripe pages with ``starting_after``; the cursor carries that value so a
@@ -174,19 +186,17 @@ class StripeConnector(Connector):
             if not page.get("has_more"):
                 return
             params["starting_after"] = payouts[-1]["id"]
-            self.context.cursor = self.context.cursor.advance(
-                payouts[-1]["id"], watermark=end
-            )
+            self.context.cursor = self.context.cursor.advance(payouts[-1]["id"], watermark=end)
 
     async def fetch_documents(
         self, start: datetime, end: datetime
-    ) -> AsyncIterator[dict]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """Stripe exposes no documents relevant to reconciliation."""
         del start, end
         return
         yield {}  # pragma: no cover - makes this an async generator
 
-    async def healthcheck(self) -> dict:
+    async def healthcheck(self) -> dict[str, Any]:
         try:
             await self._call("/v1/balance", {})
         except Exception as exc:
@@ -195,7 +205,7 @@ class StripeConnector(Connector):
         return self._health.to_dict()
 
     # -- normalisation -----------------------------------------------------
-    def normalize(self, raw: dict) -> CanonicalTransaction:
+    def normalize(self, raw: dict[str, Any]) -> CanonicalTransaction:
         payout_id = str(raw.get("id") or "")
         if not payout_id:
             raise ValueError("payout payload has no id")
@@ -204,25 +214,13 @@ class StripeConnector(Connector):
         net = _from_minor_units(int(raw.get("amount", 0)), currency)
 
         summary = raw.get("summary") or {}
-        gross = (
-            _from_minor_units(int(summary["gross"]), currency)
-            if "gross" in summary
-            else None
-        )
-        fee = (
-            _from_minor_units(int(summary["fee"]), currency)
-            if "fee" in summary
-            else None
-        )
+        gross = _from_minor_units(int(summary["gross"]), currency) if "gross" in summary else None
+        fee = _from_minor_units(int(summary["fee"]), currency) if "fee" in summary else None
 
         arrival = raw.get("arrival_date")
-        arrival_date = (
-            datetime.fromtimestamp(int(arrival), tz=UTC).date() if arrival else None
-        )
+        arrival_date = datetime.fromtimestamp(int(arrival), tz=UTC).date() if arrival else None
         created = raw.get("created")
-        created_date = (
-            datetime.fromtimestamp(int(created), tz=UTC).date() if created else None
-        )
+        created_date = datetime.fromtimestamp(int(created), tz=UTC).date() if created else None
 
         description = str(raw.get("description") or f"STRIPE PAYOUT {payout_id}")
         counterparty = raw.get("destination_name") or "STRIPE"

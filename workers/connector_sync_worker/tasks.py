@@ -13,11 +13,11 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from workers.celery_app import TenantTask, celery_app
-from workers.context import system_context
 from packages.domain.dates import utc_now
 from packages.domain.enums import AuditAction, ConnectorState
 from packages.observability import registry
+from workers.celery_app import TenantTask, celery_app
+from workers.context import system_context
 
 logger = logging.getLogger("recon.worker.connector")
 
@@ -98,9 +98,7 @@ def sync_connection(
         return {"connection_id": connection_id, **result}
 
 
-async def _run_sync(
-    context: Any, connection: Any, start: datetime, end: datetime
-) -> dict:
+async def _run_sync(context: Any, connection: Any, start: datetime, end: datetime) -> dict:
     """Build the connector for this connection and run one window.
 
     Only connectors that are actually implemented can be built. An unimplemented
@@ -125,9 +123,7 @@ async def _run_sync(
         connection_id=connection.id,
         source_system=connection.source_system,
         config=dict(connection.config or {}),
-        cursor=SyncCursor.from_dict(
-            {"value": connection.cursor} if connection.cursor else None
-        ),
+        cursor=SyncCursor.from_dict({"value": connection.cursor} if connection.cursor else None),
         credentials=credentials,
     )
 
@@ -159,10 +155,7 @@ def _decrypt_credentials(context: Any, connection: Any) -> dict[str, str]:
         .all()
     )
     cipher = context.cipher()
-    return {
-        row.kind: cipher.decrypt(row.ciphertext, context=str(connection.id))
-        for row in rows
-    }
+    return {row.kind: cipher.decrypt(row.ciphertext, context=str(connection.id)) for row in rows}
 
 
 def _build_stripe_transport(credentials: dict[str, str]) -> Any:
@@ -179,9 +172,7 @@ def _build_stripe_transport(credentials: dict[str, str]) -> Any:
 
     class HttpxTransport:
         async def get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
-            async with httpx.AsyncClient(
-                base_url="https://api.stripe.com", timeout=30.0
-            ) as client:
+            async with httpx.AsyncClient(base_url="https://api.stripe.com", timeout=30.0) as client:
                 response = await client.get(
                     path, params=params, headers={"Authorization": f"Bearer {token}"}
                 )
@@ -190,9 +181,7 @@ def _build_stripe_transport(credentials: dict[str, str]) -> Any:
                 if response.status_code == 429:
                     raise RateLimitError(
                         "Stripe rate limited the request",
-                        retry_after_seconds=float(
-                            response.headers.get("retry-after", 60)
-                        ),
+                        retry_after_seconds=float(response.headers.get("retry-after", 60)),
                     )
                 response.raise_for_status()
                 return dict(response.json())

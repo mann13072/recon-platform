@@ -164,9 +164,7 @@ def prepare_payload(
 
     # 4. tenant policy
     if not settings.enabled:
-        raise AIDisabledError(
-            "AI is disabled for this tenant. The deterministic result stands."
-        )
+        raise AIDisabledError("AI is disabled for this tenant. The deterministic result stands.")
     if task not in settings.allowed_tasks:
         raise AIDisabledError(f"AI task '{task}' is not enabled for this tenant.")
 

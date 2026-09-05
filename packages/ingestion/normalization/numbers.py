@@ -122,9 +122,7 @@ def detect_number_format(samples: list[str]) -> NumberFormat:
                 comma_decimal += 1
 
     if comma_decimal and dot_decimal:
-        raise AmbiguousNumberFormatError(
-            "amount column mixes 1.234,56 and 1,234.56 conventions"
-        )
+        raise AmbiguousNumberFormatError("amount column mixes 1.234,56 and 1,234.56 conventions")
     if comma_decimal:
         return NumberFormat.COMMA_DECIMAL
     if dot_decimal:

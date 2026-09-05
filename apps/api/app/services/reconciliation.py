@@ -97,9 +97,7 @@ class ReconciliationService:
 
     @property
     def transactions(self) -> TransactionRepository:
-        return TransactionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return TransactionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     @property
     def matches(self) -> MatchRepository:
@@ -107,9 +105,7 @@ class ReconciliationService:
 
     @property
     def exceptions(self) -> ExceptionRepository:
-        return ExceptionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return ExceptionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     # -- definitions -------------------------------------------------------
     def create(
@@ -132,8 +128,7 @@ class ReconciliationService:
             builder = TEMPLATES.get(template)
             if builder is None:
                 raise ReconciliationError(
-                    f"Unknown template '{template}'. Available: "
-                    + ", ".join(sorted(TEMPLATES)),
+                    f"Unknown template '{template}'. Available: " + ", ".join(sorted(TEMPLATES)),
                     "unknown_template",
                 )
             built, _ = builder(name=name)
@@ -226,9 +221,7 @@ class ReconciliationService:
         config = self.config_for(definition)
         rule_set = self.rule_set_for(definition)
 
-        side_a, side_b = self._select_transactions(
-            definition, config, period_start, period_end
-        )
+        side_a, side_b = self._select_transactions(definition, config, period_start, period_end)
         if not side_a and not side_b:
             raise ReconciliationError(
                 "There are no transactions in the selected period for either side.",
@@ -329,19 +322,19 @@ class ReconciliationService:
         back to source system keeps a file-only tenant working before any
         connector is configured.
         """
-        common: dict[str, Any] = {"date_from": period_start, "date_to": period_end, "limit": 100_000}
+        common: dict[str, Any] = {
+            "date_from": period_start,
+            "date_to": period_end,
+            "limit": 100_000,
+        }
 
         if definition.side_a_connection_id:
-            side_a = self.transactions.list(
-                connection_id=definition.side_a_connection_id, **common
-            )
+            side_a = self.transactions.list(connection_id=definition.side_a_connection_id, **common)
         else:
             side_a = self.transactions.list(source_system=config.side_a.type, **common)
 
         if definition.side_b_connection_id:
-            side_b = self.transactions.list(
-                connection_id=definition.side_b_connection_id, **common
-            )
+            side_b = self.transactions.list(connection_id=definition.side_b_connection_id, **common)
         else:
             side_b = self.transactions.list(source_system=config.side_b.type, **common)
 
@@ -358,9 +351,7 @@ class ReconciliationService:
         period_start: date | None,
         period_end: date | None,
     ) -> RunSnapshot:
-        checksums = {
-            str(t.id): t.source_checksum for t in (*side_a, *side_b)
-        }
+        checksums = {str(t.id): t.source_checksum for t in (*side_a, *side_b)}
         snapshot = RunSnapshot(
             run_id=run.id,
             tenant_id=self.context.tenant_id,
@@ -610,19 +601,13 @@ class ReconciliationService:
         matched_transactions = sum(len(m.members) for m in result.matches)
         total_transactions = len(side_a) + len(side_b)
 
-        high_risk = sum(
-            1 for e in exceptions if e.severity.value in {"HIGH", "CRITICAL"}
-        )
+        high_risk = sum(1 for e in exceptions if e.severity.value in {"HIGH", "CRITICAL"})
         oldest = max((e.age_days for e in exceptions), default=None)
 
-        completion = (
-            (matched_transactions / total_transactions) if total_transactions else 0.0
-        )
+        completion = (matched_transactions / total_transactions) if total_transactions else 0.0
         auto_rate = (len(auto) / len(result.matches)) if result.matches else 0.0
         review_rate = (
-            (len(suggested) + len(exceptions)) / total_transactions
-            if total_transactions
-            else 0.0
+            (len(suggested) + len(exceptions)) / total_transactions if total_transactions else 0.0
         )
 
         return RunSummary(

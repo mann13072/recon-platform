@@ -120,9 +120,13 @@ class TransactionRepository(TenantScopedRepository):
     def get_many(self, ids: Sequence[UUID]) -> list[CanonicalTransaction]:
         if not ids:
             return []
-        rows = self.session.execute(
-            self._scoped(TransactionRow).where(TransactionRow.id.in_(list(ids)))
-        ).scalars().all()
+        rows = (
+            self.session.execute(
+                self._scoped(TransactionRow).where(TransactionRow.id.in_(list(ids)))
+            )
+            .scalars()
+            .all()
+        )
         return [row_to_transaction(row) for row in rows]
 
     def list(
@@ -139,9 +143,7 @@ class TransactionRepository(TenantScopedRepository):
     ) -> list[CanonicalTransaction]:
         statement = self._scoped(TransactionRow)
         if connection_id is not None:
-            statement = statement.where(
-                TransactionRow.source_connection_id == connection_id
-            )
+            statement = statement.where(TransactionRow.source_connection_id == connection_id)
         if source_system:
             statement = statement.where(TransactionRow.source_system == source_system)
         if currency:
@@ -162,19 +164,21 @@ class TransactionRepository(TenantScopedRepository):
                 | func.upper(TransactionRow.counterparty_name).like(pattern)
             )
         # A stable secondary sort so paging cannot repeat or skip a row.
-        statement = statement.order_by(
-            _effective_date().desc(), TransactionRow.id
-        ).limit(limit).offset(offset)
+        statement = (
+            statement.order_by(_effective_date().desc(), TransactionRow.id)
+            .limit(limit)
+            .offset(offset)
+        )
         return [row_to_transaction(row) for row in self.session.execute(statement).scalars()]
 
     def count(self, *, connection_id: UUID | None = None) -> int:
-        statement = select(func.count()).select_from(TransactionRow).where(
-            TransactionRow.tenant_id == self.tenant_id
+        statement = (
+            select(func.count())
+            .select_from(TransactionRow)
+            .where(TransactionRow.tenant_id == self.tenant_id)
         )
         if connection_id is not None:
-            statement = statement.where(
-                TransactionRow.source_connection_id == connection_id
-            )
+            statement = statement.where(TransactionRow.source_connection_id == connection_id)
         return int(self.session.execute(statement).scalar_one())
 
     def existing_identity_keys(
@@ -188,22 +192,23 @@ class TransactionRepository(TenantScopedRepository):
         if not keys:
             return set()
         record_ids = {key[1] for key in keys}
-        rows = self.session.execute(
-            self._scoped(TransactionRow).where(
-                TransactionRow.source_record_id.in_(list(record_ids))
+        rows = (
+            self.session.execute(
+                self._scoped(TransactionRow).where(
+                    TransactionRow.source_record_id.in_(list(record_ids))
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return {
-            (row.source_connection_id, row.source_record_id, row.source_checksum)
-            for row in rows
+            (row.source_connection_id, row.source_record_id, row.source_checksum) for row in rows
         }
 
     def bulk_insert(self, transactions: Sequence[CanonicalTransaction]) -> int:
         for transaction in transactions:
             if transaction.tenant_id != self.tenant_id:
-                raise ValueError(
-                    "refusing to write a transaction belonging to another tenant"
-                )
+                raise ValueError("refusing to write a transaction belonging to another tenant")
             self.session.add(transaction_to_row(transaction))
         self.session.flush()
         return len(transactions)
@@ -211,11 +216,13 @@ class TransactionRepository(TenantScopedRepository):
     def balance(self, transaction_ids: Sequence[UUID]) -> Decimal:
         if not transaction_ids:
             return Decimal("0")
-        rows = self.session.execute(
-            self._scoped(TransactionRow).where(
-                TransactionRow.id.in_(list(transaction_ids))
+        rows = (
+            self.session.execute(
+                self._scoped(TransactionRow).where(TransactionRow.id.in_(list(transaction_ids)))
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return sum((row.amount for row in rows), Decimal("0"))
 
 
@@ -265,9 +272,7 @@ class SourceFileRepository(TenantScopedRepository):
 class ReconciliationRepository(TenantScopedRepository):
     def get(self, reconciliation_id: UUID) -> ReconciliationRow | None:
         return self.session.execute(
-            self._scoped(ReconciliationRow).where(
-                ReconciliationRow.id == reconciliation_id
-            )
+            self._scoped(ReconciliationRow).where(ReconciliationRow.id == reconciliation_id)
         ).scalar_one_or_none()
 
     def by_slug(self, slug: str) -> ReconciliationRow | None:
@@ -315,9 +320,7 @@ class RunRepository(TenantScopedRepository):
             statement = statement.where(RunRow.reconciliation_id == reconciliation_id)
         return list(
             self.session.execute(
-                statement.order_by(RunRow.created_at.desc(), RunRow.id)
-                .limit(limit)
-                .offset(offset)
+                statement.order_by(RunRow.created_at.desc(), RunRow.id).limit(limit).offset(offset)
             ).scalars()
         )
 
@@ -338,18 +341,14 @@ class RunRepository(TenantScopedRepository):
         self.session.flush()
         return row
 
-    def update_status(
-        self, run_id: UUID, *, expected_version: int, **updates: Any
-    ) -> RunRow:
+    def update_status(self, run_id: UUID, *, expected_version: int, **updates: Any) -> RunRow:
         """Optimistic-locking update (spec section 64).
 
         The version predicate is part of the WHERE clause, so a concurrent
         writer loses the race loudly instead of silently overwriting.
         """
         row = self.session.execute(
-            self._scoped(RunRow).where(
-                RunRow.id == run_id, RunRow.version == expected_version
-            )
+            self._scoped(RunRow).where(RunRow.id == run_id, RunRow.version == expected_version)
         ).scalar_one_or_none()
         if row is None:
             raise ConcurrencyConflict("run", run_id, expected_version)
@@ -415,14 +414,18 @@ class MatchRepository(TenantScopedRepository):
         from apps.api.app.infrastructure.models import MatchGroupMemberRow
 
         active = ("PROPOSED", "SUGGESTED", "AUTO_APPROVED", "APPROVED")
-        return self.session.execute(
-            self._scoped(MatchGroupRow)
-            .join(MatchGroupRow.members)
-            .where(
-                MatchGroupMemberRow.transaction_id == transaction_id,
-                MatchGroupRow.status.in_(active),
+        return (
+            self.session.execute(
+                self._scoped(MatchGroupRow)
+                .join(MatchGroupRow.members)
+                .where(
+                    MatchGroupMemberRow.transaction_id == transaction_id,
+                    MatchGroupRow.status.in_(active),
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
 
     def update(self, match_id: UUID, *, expected_version: int, **updates: Any) -> MatchGroupRow:
         row = self.session.execute(
@@ -490,9 +493,7 @@ class ExceptionRepository(TenantScopedRepository):
         if owner_user_id is not None:
             statement = statement.where(ExceptionRow.owner_user_id == owner_user_id)
         rows = self.session.execute(
-            statement.order_by(
-                ExceptionRow.amount_exposure.desc().nulls_last(), ExceptionRow.id
-            )
+            statement.order_by(ExceptionRow.amount_exposure.desc().nulls_last(), ExceptionRow.id)
             .limit(limit)
             .offset(offset)
         ).scalars()

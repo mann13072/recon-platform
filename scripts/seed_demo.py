@@ -97,9 +97,7 @@ def main() -> int:
     session = session_factory()
 
     try:
-        tenant = (
-            session.query(TenantRow).filter(TenantRow.slug == args.tenant_slug).one_or_none()
-        )
+        tenant = session.query(TenantRow).filter(TenantRow.slug == args.tenant_slug).one_or_none()
         if tenant is None:
             tenant = TenantRow(
                 id=uuid5(DEMO_NAMESPACE, args.tenant_slug),
@@ -133,9 +131,7 @@ def main() -> int:
                 session.flush()
                 for role in roles:
                     session.add(
-                        UserRoleRow(
-                            id=uuid4(), tenant_id=tenant.id, user_id=user.id, role=role
-                        )
+                        UserRoleRow(id=uuid4(), tenant_id=tenant.id, user_id=user.id, role=role)
                     )
             tokens[subject] = issue_dev_token(
                 settings,
@@ -234,9 +230,7 @@ def _run_workflow(session, settings, storage, tenant_id, user) -> None:  # type:
         print(f"  created reconciliation {definition.slug}")
 
     try:
-        outcome = service.start_run(
-            definition.id, idempotency_key="seed-demo-august-2026"
-        )
+        outcome = service.start_run(definition.id, idempotency_key="seed-demo-august-2026")
     except ReconciliationError as exc:
         print(f"  run skipped: {exc}")
         return

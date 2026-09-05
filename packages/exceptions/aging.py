@@ -122,9 +122,7 @@ def build_aging_report(
     return report
 
 
-def next_reminder_at(
-    exception: ExceptionRecord, now: datetime | None = None
-) -> datetime | None:
+def next_reminder_at(exception: ExceptionRecord, now: datetime | None = None) -> datetime | None:
     """When to remind the owner next.
 
     Cadence follows severity: a critical item is chased daily, a low one weekly.

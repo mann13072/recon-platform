@@ -73,9 +73,7 @@ class PeriodLockRegistry:
     ) -> PeriodLock:
         principal.require(Permission.LOCK_PERIOD)
         if principal.user_id is None:
-            raise SoDViolation(
-                "ACTOR_REQUIRED", "Locking a period requires an authenticated user."
-            )
+            raise SoDViolation("ACTOR_REQUIRED", "Locking a period requires an authenticated user.")
         if period_end < period_start:
             raise ValueError("period_end must not precede period_start")
 
@@ -94,9 +92,7 @@ class PeriodLockRegistry:
     def unlock(self, principal: Principal, lock: PeriodLock, reason: str) -> None:
         principal.require(Permission.UNLOCK_PERIOD)
         if not reason.strip():
-            raise SoDViolation(
-                "REASON_REQUIRED", "Unlocking a period requires a written reason."
-            )
+            raise SoDViolation("REASON_REQUIRED", "Unlocking a period requires a written reason.")
         self.locks = [item for item in self.locks if item != lock]
 
     def find(self, entity: str, when: date | None) -> PeriodLock | None:
@@ -111,9 +107,7 @@ class PeriodLockRegistry:
         if lock is not None:
             raise PeriodLocked(lock.label, lock.locked_by)
 
-    def assert_range_open(
-        self, entity: str, start: date | None, end: date | None
-    ) -> None:
+    def assert_range_open(self, entity: str, start: date | None, end: date | None) -> None:
         """Raise if any part of a range overlaps a locked period."""
         for lock in self.locks:
             if lock.entity != entity:

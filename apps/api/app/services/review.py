@@ -22,7 +22,11 @@ from apps.api.app.infrastructure.models import (
     ReconciliationRow,
     RunRow,
 )
-from apps.api.app.infrastructure.repositories import MatchRepository, RunRepository, TransactionRepository
+from apps.api.app.infrastructure.repositories import (
+    MatchRepository,
+    RunRepository,
+    TransactionRepository,
+)
 from packages.controls.materiality import MaterialityPolicy
 from packages.controls.period_lock import PeriodLock, PeriodLockRegistry
 from packages.controls.permissions import Permission
@@ -70,15 +74,11 @@ class ReviewService:
 
     @property
     def transactions(self) -> TransactionRepository:
-        return TransactionRepository(
-            session=self.context.session, tenant_id=self.context.tenant_id
-        )
+        return TransactionRepository(session=self.context.session, tenant_id=self.context.tenant_id)
 
     # -- gates -------------------------------------------------------------
     def _guard(self, run: RunRow) -> tuple[ReconciliationRow, ReconciliationConfig]:
-        assert_can_modify_run(
-            self.context.principal, ReconciliationStatus(run.status)
-        )
+        assert_can_modify_run(self.context.principal, ReconciliationStatus(run.status))
         definition = self.context.session.get(ReconciliationRow, run.reconciliation_id)
         if definition is None or definition.tenant_id != self.context.tenant_id:
             raise ReviewError("The reconciliation no longer exists.", "not_found")
@@ -130,9 +130,7 @@ class ReviewService:
         _, config = self._guard(run)
 
         if row.status in {MatchGroupStatus.APPROVED.value, MatchGroupStatus.REJECTED.value}:
-            raise ReviewError(
-                f"This match is already {row.status.lower()}.", "already_decided"
-            )
+            raise ReviewError(f"This match is already {row.status.lower()}.", "already_decided")
 
         assert_can_approve_match(
             self.context.principal,
@@ -176,14 +174,10 @@ class ReviewService:
         )
         return self.matches.get(match_id)  # type: ignore[return-value]
 
-    def reject(
-        self, match_id: UUID, *, expected_version: int, reason: str
-    ) -> MatchGroup:
+    def reject(self, match_id: UUID, *, expected_version: int, reason: str) -> MatchGroup:
         """Reject a proposed match. A reason is mandatory (spec section 109)."""
         if not reason or not reason.strip():
-            raise ReviewError(
-                "Rejecting a match requires a written reason.", "reason_required"
-            )
+            raise ReviewError("Rejecting a match requires a written reason.", "reason_required")
         row, run = self._require_row(match_id)
         self._guard(run)
         self.context.principal.require(Permission.REJECT_MATCH)
@@ -217,9 +211,7 @@ class ReviewService:
         only active statuses hold a claim.
         """
         if not reason.strip():
-            raise ReviewError(
-                "Unmatching requires a written reason.", "reason_required"
-            )
+            raise ReviewError("Unmatching requires a written reason.", "reason_required")
         row, run = self._require_row(match_id)
         self._guard(run)
         self.context.principal.require(Permission.UNMATCH)
@@ -256,9 +248,7 @@ class ReviewService:
         person who makes it is not the person who confirms it (spec section 34).
         """
         if not reason.strip():
-            raise ReviewError(
-                "A manual match requires a written reason.", "reason_required"
-            )
+            raise ReviewError("A manual match requires a written reason.", "reason_required")
         if not side_a_ids or not side_b_ids:
             raise ReviewError(
                 "A manual match needs at least one transaction on each side.",
@@ -274,9 +264,7 @@ class ReviewService:
         side_a = self.transactions.get_many(side_a_ids)
         side_b = self.transactions.get_many(side_b_ids)
         if len(side_a) != len(side_a_ids) or len(side_b) != len(side_b_ids):
-            raise ReviewError(
-                "One or more transactions do not exist in this tenant.", "not_found"
-            )
+            raise ReviewError("One or more transactions do not exist in this tenant.", "not_found")
 
         currencies = {t.currency for t in (*side_a, *side_b)}
         if len(currencies) > 1 and not config.allow_fx:
@@ -304,15 +292,11 @@ class ReviewService:
             reconciliation_id=definition.id,
             members=tuple(
                 [
-                    MatchGroupMember(
-                        transaction_id=t.id, side=Side.A, allocated_amount=t.amount
-                    )
+                    MatchGroupMember(transaction_id=t.id, side=Side.A, allocated_amount=t.amount)
                     for t in side_a
                 ]
                 + [
-                    MatchGroupMember(
-                        transaction_id=t.id, side=Side.B, allocated_amount=t.amount
-                    )
+                    MatchGroupMember(transaction_id=t.id, side=Side.B, allocated_amount=t.amount)
                     for t in side_b
                 ]
             ),
@@ -346,9 +330,7 @@ class ReviewService:
 
         row = self.matches.bulk_insert([group])
         del row
-        self.matches.update(
-            group.id, expected_version=1, created_by=self.context.principal.user_id
-        )
+        self.matches.update(group.id, expected_version=1, created_by=self.context.principal.user_id)
 
         self.context.audit.record(
             self.context.audit_context(),

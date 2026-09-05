@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import io
 import zipfile
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -30,7 +30,7 @@ def list_audit_events(
     limit: int = Query(200, le=2000),
     offset: int = 0,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_AUDIT))] = None,
-) -> dict:
+) -> dict[str, Any]:
     events = context.audit.events_for(context.tenant_id, limit=limit, offset=offset)
     return {
         "total": context.audit.count(context.tenant_id),
@@ -42,7 +42,7 @@ def list_audit_events(
 def verify_audit_chain(
     context: Context,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_AUDIT))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """Confirm the tenant's audit chain has not been tampered with.
 
     Any edit to a historical event breaks every hash after it, so this reports
@@ -66,7 +66,7 @@ def entity_history(
     entity_type: str,
     entity_id: UUID,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_AUDIT))] = None,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Everything that ever happened to one entity."""
     events = context.audit.events_for_entity(context.tenant_id, entity_type.upper(), entity_id)
     return [event.model_dump(mode="json") for event in events]
@@ -92,9 +92,7 @@ def download_audit_package(
     return Response(
         content=buffer.getvalue(),
         media_type="application/zip",
-        headers={
-            "Content-Disposition": f'attachment; filename="audit-package-{run_id}.zip"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="audit-package-{run_id}.zip"'},
     )
 
 
@@ -104,7 +102,7 @@ def investigate_run(
     run_id: UUID,
     payload: InvestigationRequest,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_DASHBOARD))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """Answer a question about a run.
 
         Question -> governed query functions -> structured evidence -> explanation

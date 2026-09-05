@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
+from apps.api.app.api.matches import to_match_response
 from apps.api.app.api.schemas import (
     CloseCertificateResponse,
     CloseRunRequest,
@@ -19,7 +20,6 @@ from apps.api.app.api.schemas import (
     RunSummaryResponse,
     StartRunRequest,
 )
-from apps.api.app.api.matches import to_match_response
 from apps.api.app.dependencies import Context, require_permission
 from apps.api.app.infrastructure.repositories import ConcurrencyConflict
 from apps.api.app.services.close import CloseError, CloseService
@@ -204,7 +204,7 @@ def close_preflight(
     context: Context,
     run_id: UUID,
     _: Annotated[object, Depends(require_permission(Permission.VIEW_DASHBOARD))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """What still stands between this run and being closed."""
     try:
         return CloseService(context).preflight(run_id)
@@ -220,9 +220,7 @@ def close_run(
     _: Annotated[object, Depends(require_permission(Permission.CLOSE_RUN))] = None,
 ) -> CloseCertificateResponse:
     try:
-        certificate = CloseService(context).close(
-            run_id, expected_version=payload.expected_version
-        )
+        certificate = CloseService(context).close(run_id, expected_version=payload.expected_version)
     except CloseError as exc:
         raise _problem(exc) from exc
     except SoDViolation as exc:
@@ -257,7 +255,7 @@ def replay_run(
     context: Context,
     run_id: UUID,
     _: Annotated[object, Depends(require_permission(Permission.RUN_RECONCILIATION))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """Re-execute against the frozen snapshot and compare result hashes.
 
     This is the reproducibility guarantee made checkable in production

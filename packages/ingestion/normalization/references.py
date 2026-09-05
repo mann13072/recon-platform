@@ -96,8 +96,7 @@ PATTERNS: tuple[ReferencePattern, ...] = (
     ReferencePattern(
         "PURCHASE_ORDER_V1",
         "purchase_order",
-        re.compile(r"\b(?:PO|P\.O\.|ORDER)[-\s#]?(?P<id>[A-Z0-9][A-Z0-9-]{2,})\b",
-                   re.IGNORECASE),
+        re.compile(r"\b(?:PO|P\.O\.|ORDER)[-\s#]?(?P<id>[A-Z0-9][A-Z0-9-]{2,})\b", re.IGNORECASE),
     ),
     ReferencePattern(
         "CHECK_V1",

@@ -154,10 +154,20 @@ scenario(
         ],
     ),
     matches=[
-        {"side_a": ["BANK-1"], "side_b": ["GL-1"], "relation": "1:1",
-         "decision": "AUTO_MATCH", "reasons": ["AMOUNT_EXACT", "REFERENCE_EXACT"]},
-        {"side_a": ["BANK-2"], "side_b": ["GL-2"], "relation": "1:1",
-         "decision": "AUTO_MATCH", "reasons": ["AMOUNT_EXACT", "REFERENCE_EXACT"]},
+        {
+            "side_a": ["BANK-1"],
+            "side_b": ["GL-1"],
+            "relation": "1:1",
+            "decision": "AUTO_MATCH",
+            "reasons": ["AMOUNT_EXACT", "REFERENCE_EXACT"],
+        },
+        {
+            "side_a": ["BANK-2"],
+            "side_b": ["GL-2"],
+            "relation": "1:1",
+            "decision": "AUTO_MATCH",
+            "reasons": ["AMOUNT_EXACT", "REFERENCE_EXACT"],
+        },
     ],
     exceptions=[],
     config=bank_gl(name="Exact match"),
@@ -180,8 +190,11 @@ scenario(
     ),
     matches=[],
     exceptions=[
-        {"category": "TIMING_DIFFERENCE", "transactions": ["BANK-1", "GL-1"],
-         "reason_codes": ["AMOUNT_EXACT", "DATE_OUTSIDE_WINDOW"]}
+        {
+            "category": "TIMING_DIFFERENCE",
+            "transactions": ["BANK-1", "GL-1"],
+            "reason_codes": ["AMOUNT_EXACT", "DATE_OUTSIDE_WINDOW"],
+        }
     ],
     config=bank_gl(name="Timing difference", date_days=3),
 )
@@ -226,8 +239,11 @@ scenario(
     ),
     matches=[],
     exceptions=[
-        {"category": "PARTIAL_PAYMENT", "transactions": ["BANK-1", "GL-1"],
-         "reason_codes": ["AMOUNT_SHORT"]}
+        {
+            "category": "PARTIAL_PAYMENT",
+            "transactions": ["BANK-1", "GL-1"],
+            "reason_codes": ["AMOUNT_SHORT"],
+        }
     ],
     config=bank_gl(name="Partial payment", amount_tolerance="250.00"),
 )
@@ -249,8 +265,13 @@ scenario(
         ["GL-1,2026-08-10,Invoice 7001,INV-7001,INV-7001,ACME GMBH,1000.00,EUR"],
     ),
     matches=[
-        {"side_a": ["BANK-1", "BANK-2", "BANK-3"], "side_b": ["GL-1"],
-         "relation": "N:1", "decision": "SUGGEST", "reasons": ["GROUP_SUM_EXACT"]}
+        {
+            "side_a": ["BANK-1", "BANK-2", "BANK-3"],
+            "side_b": ["GL-1"],
+            "relation": "N:1",
+            "decision": "SUGGEST",
+            "reasons": ["GROUP_SUM_EXACT"],
+        }
     ],
     exceptions=[],
     config=bank_gl(name="Split payment", grouping=True, max_group_size=5, date_days=5),
@@ -272,9 +293,7 @@ scenario(
         ["GL-1,2026-08-15,Invoice 8001,INV-8001,INV-8001,ACME GMBH,1000.00,EUR"],
     ),
     matches=[],
-    exceptions=[
-        {"category": "ANY", "transactions": ["BANK-1", "GL-1"], "reason_codes": []}
-    ],
+    exceptions=[{"category": "ANY", "transactions": ["BANK-1", "GL-1"], "reason_codes": []}],
     config=bank_gl(name="Bank fee deduction", amount_tolerance="20.00"),
 )
 
@@ -289,8 +308,11 @@ scenario(
     source_b=rows(LEDGER_HEADER, ["GL-1,2026-08-18,Sales,,,ACME GMBH,250.00,EUR"]),
     matches=[],
     exceptions=[
-        {"category": "REFUND", "transactions": ["BANK-1"],
-         "reason_codes": ["DESCRIPTION_INDICATES_REFUND"]}
+        {
+            "category": "REFUND",
+            "transactions": ["BANK-1"],
+            "reason_codes": ["DESCRIPTION_INDICATES_REFUND"],
+        }
     ],
     config=bank_gl(name="Refund"),
 )
@@ -306,8 +328,11 @@ scenario(
     source_b=rows(LEDGER_HEADER, ["GL-1,2026-08-01,Opening,,,ACME GMBH,5000.00,EUR"]),
     matches=[],
     exceptions=[
-        {"category": "CHARGEBACK", "transactions": ["BANK-1"],
-         "reason_codes": ["DESCRIPTION_INDICATES_CHARGEBACK"]}
+        {
+            "category": "CHARGEBACK",
+            "transactions": ["BANK-1"],
+            "reason_codes": ["DESCRIPTION_INDICATES_CHARGEBACK"],
+        }
     ],
     config=bank_gl(name="Chargeback"),
 )
@@ -323,14 +348,19 @@ scenario(
             "BANK-2,2026-08-15,REVERSAL OF INV-9001,INV-9001,ACME GMBH,-500.00,EUR",
         ],
     ),
-    source_b=rows(LEDGER_HEADER, ["GL-1,2026-08-14,Invoice 9001,INV-9001,INV-9001,ACME GMBH,500.00,EUR"]),
+    source_b=rows(
+        LEDGER_HEADER, ["GL-1,2026-08-14,Invoice 9001,INV-9001,INV-9001,ACME GMBH,500.00,EUR"]
+    ),
     matches=[
-        {"side_a": ["BANK-1"], "side_b": ["GL-1"], "relation": "1:1",
-         "decision": "AUTO_MATCH", "reasons": ["AMOUNT_EXACT", "REFERENCE_EXACT"]}
+        {
+            "side_a": ["BANK-1"],
+            "side_b": ["GL-1"],
+            "relation": "1:1",
+            "decision": "AUTO_MATCH",
+            "reasons": ["AMOUNT_EXACT", "REFERENCE_EXACT"],
+        }
     ],
-    exceptions=[
-        {"category": "ANY", "transactions": ["BANK-2"], "reason_codes": []}
-    ],
+    exceptions=[{"category": "ANY", "transactions": ["BANK-2"], "reason_codes": []}],
     config=bank_gl(name="Reversal"),
 )
 
@@ -373,9 +403,13 @@ scenario(
         ["PAYOUT-8F42,2026-08-31,Stripe payout,8F42,1050.00,17.55,982.45,982.45,EUR"],
     ),
     matches=[
-        {"side_a": ["BANK-1"], "side_b": ["PAYOUT-8F42"], "relation": "1:1",
-         "decision": "AUTO_MATCH",
-         "reasons": ["NET_AMOUNT_EXACT", "SETTLEMENT_REFERENCE_EXACT"]}
+        {
+            "side_a": ["BANK-1"],
+            "side_b": ["PAYOUT-8F42"],
+            "relation": "1:1",
+            "decision": "AUTO_MATCH",
+            "reasons": ["NET_AMOUNT_EXACT", "SETTLEMENT_REFERENCE_EXACT"],
+        }
     ],
     exceptions=[],
     config=processor(name="Stripe net payout"),
@@ -398,8 +432,11 @@ scenario(
     ),
     matches=[],
     exceptions=[
-        {"category": "ROUNDING_DIFFERENCE", "transactions": ["BANK-1", "PAYOUT-9C11"],
-         "reason_codes": ["SMALL_DIFFERENCE"]}
+        {
+            "category": "ROUNDING_DIFFERENCE",
+            "transactions": ["BANK-1", "PAYOUT-9C11"],
+            "reason_codes": ["SMALL_DIFFERENCE"],
+        }
     ],
     config=processor(name="Processor fee difference", amount_tolerance="0.10"),
 )
@@ -421,8 +458,13 @@ scenario(
         ],
     ),
     matches=[
-        {"side_a": ["BANK-1"], "side_b": ["GL-1", "GL-2", "GL-3"], "relation": "1:N",
-         "decision": "SUGGEST", "reasons": ["GROUP_SUM_EXACT"]}
+        {
+            "side_a": ["BANK-1"],
+            "side_b": ["GL-1", "GL-2", "GL-3"],
+            "relation": "1:N",
+            "decision": "SUGGEST",
+            "reasons": ["GROUP_SUM_EXACT"],
+        }
     ],
     exceptions=[],
     config=bank_gl(name="One to many", grouping=True, max_group_size=5),
@@ -445,8 +487,13 @@ scenario(
         ["GL-1,2026-08-05,Consolidated receivable,,,ACME GMBH,5000.00,EUR"],
     ),
     matches=[
-        {"side_a": ["BANK-1", "BANK-2", "BANK-3"], "side_b": ["GL-1"],
-         "relation": "N:1", "decision": "SUGGEST", "reasons": ["GROUP_SUM_EXACT"]}
+        {
+            "side_a": ["BANK-1", "BANK-2", "BANK-3"],
+            "side_b": ["GL-1"],
+            "relation": "N:1",
+            "decision": "SUGGEST",
+            "reasons": ["GROUP_SUM_EXACT"],
+        }
     ],
     exceptions=[],
     config=bank_gl(name="Many to one", grouping=True, max_group_size=5, date_days=5),

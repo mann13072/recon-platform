@@ -49,9 +49,7 @@ class TestExclusivity:
                 run_id=RUN_ID,
                 reconciliation_id=RECONCILIATION_ID,
                 members=(
-                    MatchGroupMember(
-                        transaction_id=tx.id, side=Side.A, allocated_amount=tx.amount
-                    ),
+                    MatchGroupMember(transaction_id=tx.id, side=Side.A, allocated_amount=tx.amount),
                     MatchGroupMember(
                         transaction_id=other.id, side=Side.B, allocated_amount=other.amount
                     ),
@@ -73,9 +71,7 @@ class TestExclusivity:
         other = make_transaction("GL-1", "100.00", source_system="ledger")
         members = (
             MatchGroupMember(transaction_id=tx.id, side=Side.A, allocated_amount=tx.amount),
-            MatchGroupMember(
-                transaction_id=other.id, side=Side.B, allocated_amount=other.amount
-            ),
+            MatchGroupMember(transaction_id=other.id, side=Side.B, allocated_amount=other.amount),
         )
         common = {
             "tenant_id": TENANT_ID,
@@ -103,17 +99,25 @@ class TestExclusivity:
     def test_engine_never_double_consumes_across_stages(self) -> None:
         """A record matched exactly must not reappear in grouping or scoring."""
         bank = [
-            make_transaction("BANK-1", "100.00", transaction_date=date(2026, 8, 1),
-                             reference="INV-1"),
+            make_transaction(
+                "BANK-1", "100.00", transaction_date=date(2026, 8, 1), reference="INV-1"
+            ),
             make_transaction("BANK-2", "300.00", transaction_date=date(2026, 8, 1)),
         ]
         ledger = [
-            make_transaction("GL-1", "100.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1), reference="INV-1"),
-            make_transaction("GL-2", "100.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1)),
-            make_transaction("GL-3", "200.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1)),
+            make_transaction(
+                "GL-1",
+                "100.00",
+                source_system="ledger",
+                transaction_date=date(2026, 8, 1),
+                reference="INV-1",
+            ),
+            make_transaction(
+                "GL-2", "100.00", source_system="ledger", transaction_date=date(2026, 8, 1)
+            ),
+            make_transaction(
+                "GL-3", "200.00", source_system="ledger", transaction_date=date(2026, 8, 1)
+            ),
         ]
         result = engine(grouping=GroupingConfig(enabled=True, max_group_size=4)).run(
             bank, ledger, context()
@@ -155,13 +159,22 @@ class TestOverAllocation:
 class TestReproducibility:
     def test_same_snapshot_same_result_hash(self) -> None:
         bank = [
-            make_transaction(f"BANK-{i}", f"{100 + i}.00",
-                             transaction_date=date(2026, 8, 1), reference=f"INV-{i}")
+            make_transaction(
+                f"BANK-{i}",
+                f"{100 + i}.00",
+                transaction_date=date(2026, 8, 1),
+                reference=f"INV-{i}",
+            )
             for i in range(20)
         ]
         ledger = [
-            make_transaction(f"GL-{i}", f"{100 + i}.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1), reference=f"INV-{i}")
+            make_transaction(
+                f"GL-{i}",
+                f"{100 + i}.00",
+                source_system="ledger",
+                transaction_date=date(2026, 8, 1),
+                reference=f"INV-{i}",
+            )
             for i in range(20)
         ]
         eng = engine()
@@ -179,35 +192,46 @@ class TestReproducibility:
         duplicate, and which leg won would depend on input order.
         """
         bank = [
-            make_transaction("BANK-1", "500.00", transaction_date=date(2026, 8, 1),
-                             reference="INV-7"),
-            make_transaction("BANK-2", "500.00", transaction_date=date(2026, 8, 1),
-                             reference="INV-7"),
+            make_transaction(
+                "BANK-1", "500.00", transaction_date=date(2026, 8, 1), reference="INV-7"
+            ),
+            make_transaction(
+                "BANK-2", "500.00", transaction_date=date(2026, 8, 1), reference="INV-7"
+            ),
         ]
         ledger = [
-            make_transaction("GL-1", "500.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1), reference="INV-7")
+            make_transaction(
+                "GL-1",
+                "500.00",
+                source_system="ledger",
+                transaction_date=date(2026, 8, 1),
+                reference="INV-7",
+            )
         ]
         result = engine().run(bank, ledger, context())
 
         assert not result.auto_matched, (
-            "a contested ledger line was auto-matched, which would hide a "
-            "duplicate payment"
+            "a contested ledger line was auto-matched, which would hide a duplicate payment"
         )
-        assert result.stage_stats["exact"].get(
-            "BANK_GL_EXACT_REFERENCE_V3_contested"
-        ) == 2
+        assert result.stage_stats["exact"].get("BANK_GL_EXACT_REFERENCE_V3_contested") == 2
 
     def test_contested_records_are_order_independent(self) -> None:
         bank = [
-            make_transaction("BANK-1", "500.00", transaction_date=date(2026, 8, 1),
-                             reference="INV-7"),
-            make_transaction("BANK-2", "500.00", transaction_date=date(2026, 8, 1),
-                             reference="INV-7"),
+            make_transaction(
+                "BANK-1", "500.00", transaction_date=date(2026, 8, 1), reference="INV-7"
+            ),
+            make_transaction(
+                "BANK-2", "500.00", transaction_date=date(2026, 8, 1), reference="INV-7"
+            ),
         ]
         ledger = [
-            make_transaction("GL-1", "500.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1), reference="INV-7")
+            make_transaction(
+                "GL-1",
+                "500.00",
+                source_system="ledger",
+                transaction_date=date(2026, 8, 1),
+                reference="INV-7",
+            )
         ]
         eng = engine()
         assert eng.run(bank, ledger, context()).result_hash == (
@@ -217,13 +241,22 @@ class TestReproducibility:
     def test_input_order_does_not_change_the_outcome(self) -> None:
         """Ranking must not depend on list order, dict order or set order."""
         bank = [
-            make_transaction(f"BANK-{i}", f"{100 + i}.00",
-                             transaction_date=date(2026, 8, 1), reference=f"INV-{i}")
+            make_transaction(
+                f"BANK-{i}",
+                f"{100 + i}.00",
+                transaction_date=date(2026, 8, 1),
+                reference=f"INV-{i}",
+            )
             for i in range(12)
         ]
         ledger = [
-            make_transaction(f"GL-{i}", f"{100 + i}.00", source_system="ledger",
-                             transaction_date=date(2026, 8, 1), reference=f"INV-{i}")
+            make_transaction(
+                f"GL-{i}",
+                f"{100 + i}.00",
+                source_system="ledger",
+                transaction_date=date(2026, 8, 1),
+                reference=f"INV-{i}",
+            )
             for i in range(12)
         ]
         eng = engine()
@@ -235,20 +268,11 @@ class TestReproducibility:
 class TestPropertyBased:
     """Hypothesis invariants from spec section 51."""
 
-    @settings(max_examples=40, deadline=None,
-              suppress_health_check=[HealthCheck.too_slow])
-    @given(
-        amounts=st.lists(
-            st.integers(min_value=1, max_value=100_000), min_size=1, max_size=12
-        )
-    )
-    def test_exclusivity_holds_for_arbitrary_amount_sets(
-        self, amounts: list[int]
-    ) -> None:
+    @settings(max_examples=40, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+    @given(amounts=st.lists(st.integers(min_value=1, max_value=100_000), min_size=1, max_size=12))
+    def test_exclusivity_holds_for_arbitrary_amount_sets(self, amounts: list[int]) -> None:
         bank = [
-            make_transaction(
-                f"BANK-{i}", Decimal(value) / 100, transaction_date=date(2026, 8, 1)
-            )
+            make_transaction(f"BANK-{i}", Decimal(value) / 100, transaction_date=date(2026, 8, 1))
             for i, value in enumerate(amounts)
         ]
         ledger = [
@@ -267,22 +291,23 @@ class TestPropertyBased:
         by_id = {tx.id: tx for tx in (*bank, *ledger)}
         assert_invariants(result.matches, by_id)
 
-    @settings(max_examples=30, deadline=None,
-              suppress_health_check=[HealthCheck.too_slow])
-    @given(
-        amounts=st.lists(
-            st.integers(min_value=1, max_value=50_000), min_size=1, max_size=8
-        )
-    )
+    @settings(max_examples=30, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+    @given(amounts=st.lists(st.integers(min_value=1, max_value=50_000), min_size=1, max_size=8))
     def test_rerunning_is_idempotent(self, amounts: list[int]) -> None:
         bank = [
-            make_transaction(f"BANK-{i}", Decimal(v) / 100,
-                             transaction_date=date(2026, 8, 1), reference=f"R{i}")
+            make_transaction(
+                f"BANK-{i}", Decimal(v) / 100, transaction_date=date(2026, 8, 1), reference=f"R{i}"
+            )
             for i, v in enumerate(amounts)
         ]
         ledger = [
-            make_transaction(f"GL-{i}", Decimal(v) / 100, source_system="ledger",
-                             transaction_date=date(2026, 8, 1), reference=f"R{i}")
+            make_transaction(
+                f"GL-{i}",
+                Decimal(v) / 100,
+                source_system="ledger",
+                transaction_date=date(2026, 8, 1),
+                reference=f"R{i}",
+            )
             for i, v in enumerate(amounts)
         ]
         eng = engine()

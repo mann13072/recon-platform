@@ -107,7 +107,9 @@ async def correlation_and_security_headers(
 # ---------------------------------------------------------------------------
 
 
-def _problem(request: Request, status_code: int, title: str, detail: str, code: str = "") -> JSONResponse:
+def _problem(
+    request: Request, status_code: int, title: str, detail: str, code: str = ""
+) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
@@ -128,9 +130,7 @@ async def _permission_denied(request: Request, exc: PermissionDenied) -> JSONRes
 
 @app.exception_handler(SoDViolation)
 async def _sod_violation(request: Request, exc: SoDViolation) -> JSONResponse:
-    return _problem(
-        request, status.HTTP_409_CONFLICT, "Control violation", str(exc), exc.code
-    )
+    return _problem(request, status.HTTP_409_CONFLICT, "Control violation", str(exc), exc.code)
 
 
 @app.exception_handler(PeriodLocked)
@@ -140,9 +140,7 @@ async def _period_locked(request: Request, exc: PeriodLocked) -> JSONResponse:
 
 @app.exception_handler(IllegalTransition)
 async def _illegal_transition(request: Request, exc: IllegalTransition) -> JSONResponse:
-    return _problem(
-        request, status.HTTP_409_CONFLICT, "Illegal transition", str(exc), exc.code
-    )
+    return _problem(request, status.HTTP_409_CONFLICT, "Illegal transition", str(exc), exc.code)
 
 
 @app.exception_handler(MatchExclusivityError)
@@ -161,16 +159,12 @@ async def _exclusivity(request: Request, exc: MatchExclusivityError) -> JSONResp
 
 @app.exception_handler(AIDisabledError)
 async def _ai_disabled(request: Request, exc: AIDisabledError) -> JSONResponse:
-    return _problem(
-        request, status.HTTP_409_CONFLICT, "AI unavailable", str(exc), "ai_disabled"
-    )
+    return _problem(request, status.HTTP_409_CONFLICT, "AI unavailable", str(exc), "ai_disabled")
 
 
 @app.exception_handler(DataRegionViolation)
 async def _ai_region(request: Request, exc: DataRegionViolation) -> JSONResponse:
-    return _problem(
-        request, status.HTTP_409_CONFLICT, "AI unavailable", str(exc), "data_region"
-    )
+    return _problem(request, status.HTTP_409_CONFLICT, "AI unavailable", str(exc), "data_region")
 
 
 @app.exception_handler(RequestValidationError)
@@ -195,12 +189,12 @@ async def _validation(request: Request, exc: RequestValidationError) -> JSONResp
 
 
 @app.get("/health", tags=["health"])
-def health() -> dict:
+def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @app.get("/health/ready", tags=["health"])
-def readiness() -> dict:
+def readiness() -> dict[str, str]:
     """Readiness includes the database, because an API that cannot reach its
     database should not receive traffic."""
     from sqlalchemy import text

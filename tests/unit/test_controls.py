@@ -15,10 +15,10 @@ from packages.controls import (
     ApprovalSubject,
     MatchAssessment,
     MaterialityPolicy,
-    Permission,
-    PermissionDenied,
     PeriodLocked,
     PeriodLockRegistry,
+    Permission,
+    PermissionDenied,
     Principal,
     SoDViolation,
     UnbalancedJournalError,
@@ -168,9 +168,7 @@ class TestMakerChecker:
 class TestMateriality:
     def test_amount_at_threshold_requires_approval(self) -> None:
         policy = MaterialityPolicy(materiality_threshold=Decimal("50000.00"))
-        assert requires_manual_approval(
-            MatchAssessment(total_amount=Decimal("50000.00")), policy
-        )
+        assert requires_manual_approval(MatchAssessment(total_amount=Decimal("50000.00")), policy)
         assert not requires_manual_approval(
             MatchAssessment(total_amount=Decimal("49999.99")), policy
         )
@@ -191,9 +189,7 @@ class TestMateriality:
             account_balance=Decimal("1000000.00"),
         )
         assert policy.effective_threshold() == Decimal("10000.00")
-        assert requires_manual_approval(
-            MatchAssessment(total_amount=Decimal("15000.00")), policy
-        )
+        assert requires_manual_approval(MatchAssessment(total_amount=Decimal("15000.00")), policy)
 
     def test_two_dollars_and_two_million_get_different_severities(self) -> None:
         """The spec's own framing of why materiality is not confidence."""
@@ -202,9 +198,7 @@ class TestMateriality:
         assert severity_for(Decimal("2000000.00"), policy) is ExceptionSeverity.CRITICAL
 
     def test_closed_period_forces_approval(self) -> None:
-        policy = MaterialityPolicy(
-            materiality_threshold=Decimal("50000.00"), period_is_closed=True
-        )
+        policy = MaterialityPolicy(materiality_threshold=Decimal("50000.00"), period_is_closed=True)
         assert requires_manual_approval(MatchAssessment(total_amount=Decimal("1.00")), policy)
 
 
@@ -313,10 +307,8 @@ class TestJournalValidation:
     def test_balanced_entry_passes(self) -> None:
         validate_journal(
             [
-                JournalLine(account="6100", side="debit", amount=Decimal("17.55"),
-                            currency="EUR"),
-                JournalLine(account="1100", side="credit", amount=Decimal("17.55"),
-                            currency="EUR"),
+                JournalLine(account="6100", side="debit", amount=Decimal("17.55"), currency="EUR"),
+                JournalLine(account="1100", side="credit", amount=Decimal("17.55"), currency="EUR"),
             ]
         )
 
@@ -324,10 +316,12 @@ class TestJournalValidation:
         with pytest.raises(UnbalancedJournalError, match="not balanced"):
             validate_journal(
                 [
-                    JournalLine(account="6100", side="debit", amount=Decimal("17.55"),
-                                currency="EUR"),
-                    JournalLine(account="1100", side="credit", amount=Decimal("17.50"),
-                                currency="EUR"),
+                    JournalLine(
+                        account="6100", side="debit", amount=Decimal("17.55"), currency="EUR"
+                    ),
+                    JournalLine(
+                        account="1100", side="credit", amount=Decimal("17.50"), currency="EUR"
+                    ),
                 ]
             )
 
@@ -335,10 +329,12 @@ class TestJournalValidation:
         with pytest.raises(UnbalancedJournalError, match="mixes currencies"):
             validate_journal(
                 [
-                    JournalLine(account="6100", side="debit", amount=Decimal("10.00"),
-                                currency="EUR"),
-                    JournalLine(account="1100", side="credit", amount=Decimal("10.00"),
-                                currency="USD"),
+                    JournalLine(
+                        account="6100", side="debit", amount=Decimal("10.00"), currency="EUR"
+                    ),
+                    JournalLine(
+                        account="1100", side="credit", amount=Decimal("10.00"), currency="USD"
+                    ),
                 ]
             )
 
@@ -348,14 +344,11 @@ class TestJournalValidation:
         with pytest.raises(UnbalancedJournalError, match="zero total"):
             validate_journal(
                 [
-                    JournalLine(account="6100", side="debit", amount=Decimal("0"),
-                                currency="EUR"),
-                    JournalLine(account="1100", side="credit", amount=Decimal("0"),
-                                currency="EUR"),
+                    JournalLine(account="6100", side="debit", amount=Decimal("0"), currency="EUR"),
+                    JournalLine(account="1100", side="credit", amount=Decimal("0"), currency="EUR"),
                 ]
             )
 
     def test_negative_amounts_are_rejected_at_the_line(self) -> None:
         with pytest.raises(ValueError, match="unsigned"):
-            JournalLine(account="6100", side="debit", amount=Decimal("-1.00"),
-                        currency="EUR")
+            JournalLine(account="6100", side="debit", amount=Decimal("-1.00"), currency="EUR")

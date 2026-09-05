@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -70,7 +70,7 @@ def get_profile(
     context: Context,
     file_id: UUID,
     _: Annotated[object, Depends(require_permission(Permission.UPLOAD_FILE))] = None,
-) -> dict:
+) -> dict[str, Any]:
     """Column profile plus the platform's suggested mapping."""
     service = IngestionService(context)
     try:

@@ -40,21 +40,15 @@ ALLOWED_TRANSITIONS: dict[ExceptionStatus, frozenset[ExceptionStatus]] = {
     S.ASSIGNED: frozenset(
         {S.INVESTIGATING, S.PROPOSED_RESOLUTION, S.BLOCKED, S.ESCALATED, S.TRIAGED}
     ),
-    S.INVESTIGATING: frozenset(
-        {S.PROPOSED_RESOLUTION, S.BLOCKED, S.ESCALATED, S.ASSIGNED}
-    ),
+    S.INVESTIGATING: frozenset({S.PROPOSED_RESOLUTION, S.BLOCKED, S.ESCALATED, S.ASSIGNED}),
     S.PROPOSED_RESOLUTION: frozenset(
         {S.AWAITING_APPROVAL, S.RESOLVED, S.INVESTIGATING, S.BLOCKED, S.ESCALATED}
     ),
-    S.AWAITING_APPROVAL: frozenset(
-        {S.RESOLVED, S.PROPOSED_RESOLUTION, S.BLOCKED, S.ESCALATED}
-    ),
+    S.AWAITING_APPROVAL: frozenset({S.RESOLVED, S.PROPOSED_RESOLUTION, S.BLOCKED, S.ESCALATED}),
     S.RESOLVED: frozenset({S.CLOSED, S.REOPENED}),
     S.CLOSED: frozenset({S.REOPENED}),
     S.BLOCKED: frozenset({S.ASSIGNED, S.INVESTIGATING, S.ESCALATED, S.TRIAGED}),
-    S.ESCALATED: frozenset(
-        {S.ASSIGNED, S.INVESTIGATING, S.PROPOSED_RESOLUTION, S.BLOCKED}
-    ),
+    S.ESCALATED: frozenset({S.ASSIGNED, S.INVESTIGATING, S.PROPOSED_RESOLUTION, S.BLOCKED}),
     S.REOPENED: frozenset({S.ASSIGNED, S.INVESTIGATING, S.TRIAGED, S.ESCALATED}),
 }
 
@@ -94,9 +88,7 @@ def can_transition(
     """Whether a transition is structurally allowed for this actor type."""
     if target not in ALLOWED_TRANSITIONS.get(current, frozenset()):
         return False
-    if target in HUMAN_ONLY_STATES and actor_type is not ActorType.USER:
-        return False
-    return True
+    return not (target in HUMAN_ONLY_STATES and actor_type is not ActorType.USER)
 
 
 @dataclass(slots=True)
@@ -130,9 +122,7 @@ class ExceptionWorkflow:
             )
 
         if target is exception.status:
-            raise IllegalTransition(
-                f"The exception is already {target.value}.", code="NO_OP"
-            )
+            raise IllegalTransition(f"The exception is already {target.value}.", code="NO_OP")
 
         if target not in ALLOWED_TRANSITIONS.get(exception.status, frozenset()):
             legal = ", ".join(
@@ -160,9 +150,7 @@ class ExceptionWorkflow:
                 code="REASON_REQUIRED",
             )
 
-        if target is S.RESOLVED and not (
-            resolution_code or exception.resolution_code
-        ):
+        if target is S.RESOLVED and not (resolution_code or exception.resolution_code):
             raise IllegalTransition(
                 "Resolving an exception requires a resolution code.",
                 code="RESOLUTION_CODE_REQUIRED",

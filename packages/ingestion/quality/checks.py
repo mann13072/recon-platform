@@ -81,9 +81,7 @@ def check_profile(profile: FileProfile) -> list[QualityFinding]:
             )
             findings.append(
                 QualityFinding(
-                    "AMBIGUOUS_DATE_FORMAT"
-                    if "DD/MM" in warning
-                    else "COLUMN_WARNING",
+                    "AMBIGUOUS_DATE_FORMAT" if "DD/MM" in warning else "COLUMN_WARNING",
                     level,
                     f"Column '{column.name}': {warning}",
                 )
@@ -247,8 +245,7 @@ def run_quality_checks(
             QualityFinding(
                 "MIXED_CURRENCIES",
                 QualityLevel.WARN,
-                "The file contains more than one currency: "
-                + ", ".join(sorted(totals)),
+                "The file contains more than one currency: " + ", ".join(sorted(totals)),
                 affected_count=len(totals),
             )
         )

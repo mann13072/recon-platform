@@ -106,9 +106,7 @@ def assess(match: MatchAssessment, policy: MaterialityPolicy) -> MaterialityDeci
 
     if match.reconciliation_type and match.reconciliation_type in policy.always_review_types:
         requires = True
-        reasons.append(
-            f"reconciliation type '{match.reconciliation_type}' is always reviewed"
-        )
+        reasons.append(f"reconciliation type '{match.reconciliation_type}' is always reviewed")
 
     if match.account and match.account in policy.high_risk_accounts:
         requires = True
@@ -124,9 +122,7 @@ def assess(match: MatchAssessment, policy: MaterialityPolicy) -> MaterialityDeci
 
     if policy.approval_limit is not None and amount > policy.approval_limit:
         requires = True
-        reasons.append(
-            f"the amount exceeds the approver's limit of {policy.approval_limit:,.2f}"
-        )
+        reasons.append(f"the amount exceeds the approver's limit of {policy.approval_limit:,.2f}")
 
     return MaterialityDecision(
         requires_approval=requires,

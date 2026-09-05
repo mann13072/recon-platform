@@ -13,10 +13,10 @@ ever scored, so the cost is proportional to real collisions rather than to
 from __future__ import annotations
 
 from collections import defaultdict
-from functools import lru_cache
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
+from functools import lru_cache
 from uuid import UUID, uuid5
 
 from packages.domain.dates import DateField
@@ -115,15 +115,27 @@ class BlockingIndex:
     the quadratic path.
     """
 
-    by_external_id: dict[str, list[CanonicalTransaction]] = field(default_factory=lambda: defaultdict(list))
-    by_settlement: dict[str, list[CanonicalTransaction]] = field(default_factory=lambda: defaultdict(list))
-    by_invoice: dict[str, list[CanonicalTransaction]] = field(default_factory=lambda: defaultdict(list))
-    by_reference: dict[str, list[CanonicalTransaction]] = field(default_factory=lambda: defaultdict(list))
+    by_external_id: dict[str, list[CanonicalTransaction]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_settlement: dict[str, list[CanonicalTransaction]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_invoice: dict[str, list[CanonicalTransaction]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_reference: dict[str, list[CanonicalTransaction]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
     by_amount_bucket: dict[tuple[str, int], list[CanonicalTransaction]] = field(
         default_factory=lambda: defaultdict(list)
     )
-    by_counterparty: dict[str, list[CanonicalTransaction]] = field(default_factory=lambda: defaultdict(list))
-    by_check: dict[str, list[CanonicalTransaction]] = field(default_factory=lambda: defaultdict(list))
+    by_counterparty: dict[str, list[CanonicalTransaction]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+    by_check: dict[str, list[CanonicalTransaction]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
     all_transactions: list[CanonicalTransaction] = field(default_factory=list)
 
     @classmethod
@@ -163,9 +175,7 @@ def _amount_key(tx: CanonicalTransaction) -> tuple[str, int]:
 # it is unique, so the result is worth keeping.
 @lru_cache(maxsize=200_000)
 def _identifiers_in(description: str) -> tuple[str, ...]:
-    return tuple(
-        sorted({ref.normalized for ref in extract_references(description).references})
-    )
+    return tuple(sorted({ref.normalized for ref in extract_references(description).references}))
 
 
 def _description_identifiers(tx: CanonicalTransaction) -> tuple[str, ...]:
@@ -322,7 +332,4 @@ def date_bucket(tx: CanonicalTransaction, field: DateField, days: int) -> tuple[
     anchor = tx.date_for(field) or tx.best_date
     if anchor is None:
         return ()
-    return tuple(
-        (anchor + timedelta(days=offset)).isoformat()
-        for offset in range(-days, days + 1)
-    )
+    return tuple((anchor + timedelta(days=offset)).isoformat() for offset in range(-days, days + 1))

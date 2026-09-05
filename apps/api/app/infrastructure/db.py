@@ -60,9 +60,7 @@ def make_session_factory(engine: Engine | None = None) -> sessionmaker[Session]:
     if engine is not None:
         return sessionmaker(bind=engine, expire_on_commit=False, future=True)
     if _session_factory is None:
-        _session_factory = sessionmaker(
-            bind=get_engine(), expire_on_commit=False, future=True
-        )
+        _session_factory = sessionmaker(bind=get_engine(), expire_on_commit=False, future=True)
     return _session_factory
 
 

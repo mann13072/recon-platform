@@ -69,8 +69,7 @@ class DocumentParser(ABC):
     version: str = "none"
 
     @abstractmethod
-    def parse(self, data: bytes, mime_type: str) -> ExtractedDocument:
-        ...
+    def parse(self, data: bytes, mime_type: str) -> ExtractedDocument: ...
 
 
 class NullDocumentParser(DocumentParser):
@@ -114,9 +113,7 @@ def verification_required(
         try:
             amount = Decimal(amount_field.value.replace(",", ""))
         except (ValueError, ArithmeticError):
-            reasons.append(
-                f"the extracted amount '{amount_field.value}' is not a number"
-            )
+            reasons.append(f"the extracted amount '{amount_field.value}' is not a number")
         else:
             if abs(amount) >= materiality_threshold:
                 reasons.append(
@@ -138,8 +135,5 @@ def to_evidence_metadata(document: ExtractedDocument) -> dict[str, Any]:
         "parser_version": document.parser_version,
         "field_count": len(document.fields),
         "low_confidence_field_count": len(document.low_confidence_fields()),
-        "fields": {
-            f.name: {"value": f.value, "confidence": f.confidence}
-            for f in document.fields
-        },
+        "fields": {f.name: {"value": f.value, "confidence": f.confidence} for f in document.fields},
     }
