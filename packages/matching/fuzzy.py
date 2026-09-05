@@ -9,7 +9,6 @@ All functions return a value in [0.0, 1.0].
 
 from __future__ import annotations
 
-from difflib import SequenceMatcher
 from functools import lru_cache
 
 from packages.ingestion.normalization.text import tokenize
@@ -134,10 +133,17 @@ def trigram_similarity(a: str | None, b: str | None) -> float:
 
 
 def token_set_ratio(a: str | None, b: str | None) -> float:
-    """Order-insensitive token overlap, with a sequence fallback for near-tokens.
+    """Order-insensitive token overlap, with tolerance for spelling differences.
 
-    Bank narratives reorder the same words constantly, so pure sequence
-    similarity understates real matches.
+    Bank narratives reorder the same words constantly, so a pure sequence
+    measure understates real matches. The score is weighted toward exact token
+    overlap; the trigram component only lifts pairs that differ by spelling
+    rather than by content.
+
+    Trigram similarity is used for that second component rather than
+    ``difflib.SequenceMatcher``: the results are close, but SequenceMatcher is
+    quadratic in the string length and this runs once per candidate pair, which
+    made it the dominant cost of a large run.
     """
     if not a or not b:
         return 0.0
@@ -145,13 +151,12 @@ def token_set_ratio(a: str | None, b: str | None) -> float:
     if not set_a or not set_b:
         return 0.0
 
-    intersection = set_a & set_b
-    jaccard = len(intersection) / len(set_a | set_b)
+    jaccard = len(set_a & set_b) / len(set_a | set_b)
 
-    sequence = SequenceMatcher(
-        None, " ".join(sorted(set_a)), " ".join(sorted(set_b))
-    ).ratio()
+    # With no shared tokens the blended score cannot reach any useful threshold,
+    # so the spelling comparison is not worth running.
+    if jaccard == 0.0:
+        return 0.0
 
-    # Weighted toward exact token overlap; the sequence ratio only lifts pairs
-    # that differ by spelling rather than by content.
-    return round(0.7 * jaccard + 0.3 * sequence, 6)
+    spelling = trigram_similarity(" ".join(sorted(set_a)), " ".join(sorted(set_b)))
+    return round(0.7 * jaccard + 0.3 * spelling, 6)

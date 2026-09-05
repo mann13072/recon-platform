@@ -23,6 +23,7 @@ from packages.domain.models.matching import (
     CandidateMatch,
     MatchGroup,
     MatchGroupMember,
+    MatchReason,
     ScoredCandidate,
 )
 from packages.domain.models.reconciliation import ReconciliationConfig
@@ -37,6 +38,10 @@ from packages.matching.rules import MatchingRule, RuleSet
 from packages.matching.scoring import Scorer
 
 __all__ = ["ExactMatcher", "RuleMatcher", "StageContext", "StageResult", "make_group"]
+
+# Placeholder ID for candidates that exist only long enough to be scored inside
+# a rule stage. Nothing persists them, so they need no stable identity.
+_EPHEMERAL_CANDIDATE_ID = uuid5(candidate_namespace, "ephemeral-rule-candidate")
 
 
 @dataclass(slots=True)
@@ -69,6 +74,7 @@ def make_group(
     status: MatchGroupStatus,
     decision: DecisionOutcome,
     confidence: float,
+    reasons: tuple[MatchReason, ...] | None = None,
 ) -> MatchGroup:
     members = [
         MatchGroupMember(transaction_id=tx.id, side=Side.A, allocated_amount=tx.amount)
@@ -109,7 +115,7 @@ def make_group(
         rule_version=rule.version,
         rule_set_version=context.rule_set_version,
         engine_stage=stage,
-        reasons=scored.reasons if scored else (),
+        reasons=reasons if reasons is not None else (scored.reasons if scored else ()),
         warnings=scored.warnings if scored else (),
         competing_candidate_count=0,
     )
@@ -234,8 +240,12 @@ def _run_rule_stage(
 
             hits: list[tuple[CanonicalTransaction, ScoredCandidate]] = []
             for b in sorted(partners, key=lambda tx: str(tx.id)):
+                # The candidate's own ID is not used by this stage - a match
+                # group gets its ID from ``make_group`` - and deriving a uuid5
+                # for every partner a rule merely *considers* was the largest
+                # single cost in a large run. A sentinel is used instead.
                 candidate = CandidateMatch(
-                    id=uuid5(candidate_namespace, f"{context.run_id}:{a.id}:{b.id}"),
+                    id=_EPHEMERAL_CANDIDATE_ID,
                     tenant_id=context.tenant_id,
                     run_id=context.run_id,
                     side_a_ids=(a.id,),

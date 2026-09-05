@@ -1,0 +1,11 @@
+{
+  "exceptions": [
+    {
+      "category": "ANY",
+      "transactions": [
+        "BANK-2"
+      ],
+      "reason_codes": []
+    }
+  ]
+}

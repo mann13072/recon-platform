@@ -1,0 +1,2 @@
+id,date,memo,reference,invoice,counterparty,amount,currency
+GL-1,2026-08-10,Invoice 7001,INV-7001,INV-7001,ACME GMBH,1000.00,EUR

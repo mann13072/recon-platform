@@ -1,0 +1,2 @@
+id,date,description,settlement_id,gross_amount,fee_amount,net_amount,amount,currency
+PAYOUT-9C11,2026-08-31,Stripe payout,9C11,1050.00,17.50,982.50,982.50,EUR

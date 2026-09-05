@@ -1,0 +1,2 @@
+id,date,description,reference,counterparty,amount,currency
+BANK-1,2026-08-15,SEPA CT INV-8001 LESS FEE,INV-8001,ACME GMBH,987.50,EUR

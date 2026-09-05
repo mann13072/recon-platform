@@ -1,0 +1,3 @@
+id,date,memo,reference,invoice,counterparty,amount,currency
+GL-1,2026-08-10,Receivable A,,,ACME GMBH,700.00,EUR
+GL-2,2026-08-10,Receivable B,,,ACME GMBH,300.00,EUR

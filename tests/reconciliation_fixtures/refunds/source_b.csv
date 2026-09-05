@@ -1,0 +1,2 @@
+id,date,memo,reference,invoice,counterparty,amount,currency
+GL-1,2026-08-18,Sales,,,ACME GMBH,250.00,EUR

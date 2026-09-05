@@ -1,0 +1,19 @@
+{
+  "description": "A payment and its reversal, both on the bank side.",
+  "matches": [
+    {
+      "side_a": [
+        "BANK-1"
+      ],
+      "side_b": [
+        "GL-1"
+      ],
+      "relation": "1:1",
+      "decision": "AUTO_MATCH",
+      "reasons": [
+        "AMOUNT_EXACT",
+        "REFERENCE_EXACT"
+      ]
+    }
+  ]
+}

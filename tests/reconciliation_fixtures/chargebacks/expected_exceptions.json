@@ -1,0 +1,13 @@
+{
+  "exceptions": [
+    {
+      "category": "CHARGEBACK",
+      "transactions": [
+        "BANK-1"
+      ],
+      "reason_codes": [
+        "DESCRIPTION_INDICATES_CHARGEBACK"
+      ]
+    }
+  ]
+}

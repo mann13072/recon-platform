@@ -1,0 +1,14 @@
+{
+  "exceptions": [
+    {
+      "category": "PARTIAL_PAYMENT",
+      "transactions": [
+        "BANK-1",
+        "GL-1"
+      ],
+      "reason_codes": [
+        "AMOUNT_SHORT"
+      ]
+    }
+  ]
+}

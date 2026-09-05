@@ -1,0 +1,18 @@
+"""Xero connector - not implemented yet.
+
+Planned for Phase 2 (spec section 77). Deliberately absent rather than stubbed:
+a connector that silently returns nothing would let a reconciliation look
+complete while a whole side was missing, which spec section 89 forbids.
+
+When implemented it needs: OAuth 2.0 with tenant selection; BankTransactions and Invoices endpoints.
+
+Everything a connector must provide is defined in ``packages.connectors.base``.
+See ``docs/connector-sdk.md``.
+"""
+
+from packages.connectors.base import Connector
+
+__all__: list[str] = []
+
+IMPLEMENTED = False
+NOTES = "OAuth 2.0 with tenant selection; BankTransactions and Invoices endpoints"

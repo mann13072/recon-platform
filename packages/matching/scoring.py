@@ -219,13 +219,17 @@ class Scorer:
 
         Returns ``None`` when a rule's hard conditions are not satisfied, which
         means the rule simply does not apply to this pair.
-        """
-        features = extract_features(a, b, date_field=self.config.tolerances.date_field)
 
+        The rule is evaluated *before* features are extracted. Most candidates a
+        rule sees do not satisfy it, and feature extraction runs several string
+        similarity algorithms - doing that work for a pair the rule is about to
+        reject is the single largest avoidable cost in a large run.
+        """
         if rule is not None:
             scored = self._score_with_rule(rule, a, b)
             if scored is None:
                 return None
+            features = extract_features(a, b, date_field=self.config.tolerances.date_field)
             raw_score, satisfied_codes = scored
             normalized = raw_score / rule.max_score if rule.max_score else 0.0
             reasons = build_reasons(features, satisfied_codes, a, b)
@@ -233,6 +237,7 @@ class Scorer:
             rule_id: str | None = rule.id
             rule_version: str | None = rule.version
         else:
+            features = extract_features(a, b, date_field=self.config.tolerances.date_field)
             normalized = self._score_with_features(features, a, b)
             reasons = build_reasons(features, None, a, b)
             # The default scorer has no measured history, so it never clears the

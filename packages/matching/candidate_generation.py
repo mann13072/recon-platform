@@ -13,6 +13,7 @@ ever scored, so the cost is proportional to real collisions rather than to
 from __future__ import annotations
 
 from collections import defaultdict
+from functools import lru_cache
 from dataclasses import dataclass, field
 from datetime import timedelta
 from decimal import Decimal
@@ -24,7 +25,7 @@ from packages.domain.models.matching import CandidateMatch
 from packages.domain.models.reconciliation import ReconciliationConfig
 from packages.domain.models.transaction import CanonicalTransaction
 from packages.domain.money import minor_units
-from packages.ingestion.normalization import description_contains
+from packages.ingestion.normalization import extract_references
 
 __all__ = [
     "BlockingIndex",
@@ -158,6 +159,22 @@ def _amount_key(tx: CanonicalTransaction) -> tuple[str, int]:
     return (tx.currency, minor_units(tx.amount, tx.currency))
 
 
+# Extraction is pure and a description repeats across a run far more often than
+# it is unique, so the result is worth keeping.
+@lru_cache(maxsize=200_000)
+def _identifiers_in(description: str) -> tuple[str, ...]:
+    return tuple(
+        sorted({ref.normalized for ref in extract_references(description).references})
+    )
+
+
+def _description_identifiers(tx: CanonicalTransaction) -> tuple[str, ...]:
+    """Normalised identifiers found inside a transaction's narrative."""
+    if not tx.description:
+        return ()
+    return _identifiers_in(tx.description)
+
+
 @dataclass(slots=True)
 class CandidateGenerator:
     """Generates 1:1 candidates for a run (Stage 4)."""
@@ -249,18 +266,18 @@ class CandidateGenerator:
         if a.check_number:
             add(index.by_check.get(a.check_number.upper(), []))
 
-        add(self._amount_neighbourhood(a, index))
+        # Identifiers buried in a bank narrative - "STRIPE PAYOUT 8F42" - are
+        # pulled out once and looked up, rather than by scanning the opposite
+        # side for a description that contains each of its identifiers. The scan
+        # would be O(n) per anchor and so O(n*m) overall, which is exactly what
+        # this module exists to avoid.
+        for extracted in _description_identifiers(a):
+            add(index.by_settlement.get(extracted, []))
+            add(index.by_invoice.get(extracted, []))
+            add(index.by_external_id.get(extracted, []))
+            add(index.by_reference.get(extracted, []))
 
-        # Identifiers buried in a bank narrative: only worth scanning when the
-        # description exists and the opposite side is small enough that a scan
-        # is cheaper than missing the match.
-        if a.description and index.size() <= 5_000:
-            for b in index.all_transactions:
-                if b.id in found:
-                    continue
-                identifier = b.settlement_id or b.payout_id or b.external_transaction_id
-                if identifier and description_contains(a.description, identifier):
-                    found[b.id] = b
+        add(self._amount_neighbourhood(a, index))
 
         return list(found.values())
 

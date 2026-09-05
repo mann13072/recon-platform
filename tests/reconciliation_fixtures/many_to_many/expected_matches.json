@@ -1,0 +1,4 @@
+{
+  "description": "Two deposits against two ledger lines with no shared identifier. Unconstrained N:N is not attempted: everything goes to a human.",
+  "matches": []
+}

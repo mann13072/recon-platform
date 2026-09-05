@@ -1,0 +1,4 @@
+{
+  "description": "The bank received USD, the ledger booked EUR. FX is not a wider amount tolerance: with FX disabled these are not even eligible.",
+  "matches": []
+}

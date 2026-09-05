@@ -1,0 +1,2 @@
+id,date,description,settlement_id,gross_amount,fee_amount,net_amount,amount,currency
+PAYOUT-8F42,2026-08-31,Stripe payout,8F42,1050.00,17.55,982.45,982.45,EUR

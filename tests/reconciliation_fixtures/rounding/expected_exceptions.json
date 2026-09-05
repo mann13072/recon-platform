@@ -1,0 +1,14 @@
+{
+  "exceptions": [
+    {
+      "category": "ROUNDING_DIFFERENCE",
+      "transactions": [
+        "BANK-1",
+        "PAYOUT-9C11"
+      ],
+      "reason_codes": [
+        "SMALL_DIFFERENCE"
+      ]
+    }
+  ]
+}

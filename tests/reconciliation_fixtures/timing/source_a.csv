@@ -1,0 +1,2 @@
+id,date,description,reference,counterparty,amount,currency
+BANK-1,2026-08-28,SEPA CT INV-5001,INV-5001,ACME GMBH,4200.00,EUR

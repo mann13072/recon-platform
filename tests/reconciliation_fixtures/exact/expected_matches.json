@@ -1,0 +1,33 @@
+{
+  "description": "Identical amount and reference on both sides. The strongest case.",
+  "matches": [
+    {
+      "side_a": [
+        "BANK-1"
+      ],
+      "side_b": [
+        "GL-1"
+      ],
+      "relation": "1:1",
+      "decision": "AUTO_MATCH",
+      "reasons": [
+        "AMOUNT_EXACT",
+        "REFERENCE_EXACT"
+      ]
+    },
+    {
+      "side_a": [
+        "BANK-2"
+      ],
+      "side_b": [
+        "GL-2"
+      ],
+      "relation": "1:1",
+      "decision": "AUTO_MATCH",
+      "reasons": [
+        "AMOUNT_EXACT",
+        "REFERENCE_EXACT"
+      ]
+    }
+  ]
+}

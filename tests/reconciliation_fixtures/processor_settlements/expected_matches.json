@@ -1,0 +1,19 @@
+{
+  "description": "Spec section 100: the bank deposit equals the net payout and the payout ID appears in the bank narrative.",
+  "matches": [
+    {
+      "side_a": [
+        "BANK-1"
+      ],
+      "side_b": [
+        "PAYOUT-8F42"
+      ],
+      "relation": "1:1",
+      "decision": "AUTO_MATCH",
+      "reasons": [
+        "NET_AMOUNT_EXACT",
+        "SETTLEMENT_REFERENCE_EXACT"
+      ]
+    }
+  ]
+}

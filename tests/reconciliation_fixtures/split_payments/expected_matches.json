@@ -1,0 +1,20 @@
+{
+  "description": "One ledger invoice settled by three separate bank credits.",
+  "matches": [
+    {
+      "side_a": [
+        "BANK-1",
+        "BANK-2",
+        "BANK-3"
+      ],
+      "side_b": [
+        "GL-1"
+      ],
+      "relation": "N:1",
+      "decision": "SUGGEST",
+      "reasons": [
+        "GROUP_SUM_EXACT"
+      ]
+    }
+  ]
+}

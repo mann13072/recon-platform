@@ -67,6 +67,14 @@ REASON_CATALOGUE: dict[str, tuple[float, str]] = {
         0.50,
         "The grouped records sum exactly to the anchor transaction's amount.",
     ),
+    "GROUP_SEARCH_EXHAUSTIVE": (
+        0.30,
+        "The bounded search found exactly one combination that works.",
+    ),
+    "GROUP_SHARED_BATCH": (
+        0.20,
+        "Every grouped record carries the same batch as the anchor.",
+    ),
     "FEATURE_SCORE": (0.0, "Scored on deterministic features."),
 }
 

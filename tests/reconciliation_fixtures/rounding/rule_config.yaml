@@ -1,0 +1,26 @@
+reconciliation:
+  name: "Processor fee difference"
+  side_a:
+    type: bank
+    account: bank
+  side_b:
+    type: processor
+    account: stripe
+  period:
+    frequency: monthly
+  rules:
+    - processor_payout_net_and_reference
+    - processor_payout_settlement_id
+  tolerances:
+    date_days: 5
+    amount_absolute: "0.10"
+  grouping:
+    enabled: false
+    max_group_size: 6
+  decision:
+    auto_match_threshold: 0.995
+    suggested_match_threshold: 0.80
+    minimum_candidate_margin: 0.08
+  controls:
+    materiality_threshold: "50000.00"
+    manual_approval_above_materiality: true

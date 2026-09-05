@@ -1,0 +1,4 @@
+id,date,memo,reference,invoice,counterparty,amount,currency
+GL-1,2026-08-31,Batch item 1,,,ACME GMBH,4000.00,EUR
+GL-2,2026-08-31,Batch item 2,,,ACME GMBH,3000.00,EUR
+GL-3,2026-08-31,Batch item 3,,,ACME GMBH,3000.00,EUR

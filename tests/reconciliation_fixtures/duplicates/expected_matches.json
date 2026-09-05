@@ -1,0 +1,4 @@
+{
+  "description": "The same invoice paid twice against one ledger line. Neither leg may auto-match: doing so would hide a duplicate payment.",
+  "matches": []
+}

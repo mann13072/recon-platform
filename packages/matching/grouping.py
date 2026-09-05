@@ -25,7 +25,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from packages.domain.enums import DecisionOutcome, MatchGroupStatus
-from packages.domain.models.matching import MatchGroup
+from packages.domain.models.matching import MatchGroup, MatchReason
 from packages.domain.models.reconciliation import GroupingConfig, ReconciliationConfig
 from packages.domain.models.transaction import CanonicalTransaction
 from packages.domain.money import minor_units
@@ -286,6 +286,7 @@ class GroupMatcher:
                     status=MatchGroupStatus.SUGGESTED,
                     decision=DecisionOutcome.SUGGEST,
                     confidence=0.9,
+                    reasons=_group_reasons(anchor, members, search),
                 )
             )
             consumed_anchors.add(anchor.id)
@@ -371,3 +372,51 @@ def _grouping_rule(grouping: GroupingConfig) -> MatchingRule:
         decision=RuleDecision(auto_match_min_score=101.0, suggest_min_score=0.0),
         risk=RuleRisk(require_unique_candidate=True, precision_estimate=0.0),
     )
+
+
+def _group_reasons(
+    anchor: CanonicalTransaction,
+    members: list[CanonicalTransaction],
+    search: SubsetSearchResult,
+) -> tuple[MatchReason, ...]:
+    """Evidence codes for a grouped match (spec section 40).
+
+    A group is only ever a suggestion, so the reviewer needs to see exactly what
+    the engine did: which records were summed, that the sum is exact, and that
+    the search was exhaustive and found only one way to make the total.
+    """
+    total = sum((m.amount for m in members), Decimal("0"))
+    reasons = [
+        MatchReason(
+            code="GROUP_SUM_EXACT",
+            contribution=0.50,
+            description=(
+                f"{len(members)} records sum to {anchor.currency} "
+                f"{abs(total):,.2f}, matching the anchor transaction exactly."
+            ),
+        ),
+        MatchReason(
+            code="GROUP_SEARCH_EXHAUSTIVE",
+            contribution=0.30,
+            description=(
+                f"The search explored the whole bounded space "
+                f"({search.nodes_visited:,} nodes) and found exactly one "
+                "combination that works."
+            ),
+        ),
+    ]
+
+    shared_batch = {m.batch_id for m in members if m.batch_id}
+    if anchor.batch_id and shared_batch == {anchor.batch_id}:
+        reasons.append(
+            MatchReason(
+                code="GROUP_SHARED_BATCH",
+                contribution=0.20,
+                description=(
+                    f"Every grouped record carries batch {anchor.batch_id}, "
+                    "the same batch as the anchor transaction."
+                ),
+            )
+        )
+
+    return tuple(reasons)

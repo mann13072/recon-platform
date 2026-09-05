@@ -1,0 +1,28 @@
+reconciliation:
+  name: "Duplicate payment"
+  side_a:
+    type: bank
+    account: bank
+  side_b:
+    type: ledger
+    account: ledger
+  period:
+    frequency: monthly
+  rules:
+    - bank_gl_exact_reference
+    - bank_gl_exact_external_id
+    - bank_gl_invoice_amount_date
+    - bank_gl_amount_date_counterparty
+  tolerances:
+    date_days: 3
+    amount_absolute: "0.01"
+  grouping:
+    enabled: false
+    max_group_size: 5
+  decision:
+    auto_match_threshold: 0.995
+    suggested_match_threshold: 0.80
+    minimum_candidate_margin: 0.08
+  controls:
+    materiality_threshold: "50000.00"
+    manual_approval_above_materiality: true

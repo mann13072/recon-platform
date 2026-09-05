@@ -1,0 +1,20 @@
+{
+  "description": "Spec section 20: bank 10,000 = ledger 4,000 + 3,000 + 3,000.",
+  "matches": [
+    {
+      "side_a": [
+        "BANK-1"
+      ],
+      "side_b": [
+        "GL-1",
+        "GL-2",
+        "GL-3"
+      ],
+      "relation": "1:N",
+      "decision": "SUGGEST",
+      "reasons": [
+        "GROUP_SUM_EXACT"
+      ]
+    }
+  ]
+}

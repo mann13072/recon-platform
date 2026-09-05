@@ -1,0 +1,2 @@
+id,date,memo,reference,invoice,counterparty,amount,currency
+GL-1,2026-08-15,Customer payment,INV-4930,INV-4930,ACME GMBH,1250.00,EUR
