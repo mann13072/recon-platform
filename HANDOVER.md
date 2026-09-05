@@ -17,13 +17,40 @@ things you must NOT do.
 **Before you write a single line of code:**
 
 1. Run `cd "C:\Users\13072\Desktop\Finance\AI reconciliation Software"`
-2. Run `python -m pytest tests -q` — you MUST see `312 passed`. If you see anything else, STOP and report it.
-3. Run `python scripts/verify_build_checklist.py` — you MUST see `26/26 checklist items pass`. If not, STOP and report it.
-4. Run `git log --oneline | head -7` — you MUST see 7 commits ending with `Foundation: repo layout...`.
+2. Run `python -m pytest tests -q --basetemp=./.pytest-tmp` — you MUST see `312 passed`.
+   Then `rm -rf ./.pytest-tmp`.
+   **Read the note on `--basetemp` below before running this any other way.**
+3. Run `python scripts/verify_build_checklist.py` — you MUST see `26/26 checklist items pass`.
+4. Run `git rev-list --count HEAD` — you MUST see `9`. Run `git branch --show-current` —
+   you MUST see `main`.
 5. Read `README.md` and then Section 3 of this document (Locked Decisions).
 
-If steps 2 or 3 fail, the repository is not in the state this handover describes. Do not
-proceed. Report the discrepancy.
+### The `--basetemp` flag is not optional in a sandbox
+
+`tests/integration/test_end_to_end.py` is the **only** file that uses pytest's `tmp_path`
+fixture, and it contains **exactly 8 tests**. If your environment denies write access to
+the system temp directory, those 8 tests report as **errors**, and you will see:
+
+```
+304 passed, 8 errors
+```
+
+**That is an environment problem, not an application failure.** 304 + 8 = 312. Confirm it
+is the temp directory and not something real by running the suite with a temp directory
+inside the repository:
+
+```bash
+python -m pytest tests -q --basetemp=./.pytest-tmp
+rm -rf ./.pytest-tmp
+```
+
+If that shows `312 passed`, the baseline is correct and you may proceed. If it shows any
+failure, stop and report it — that would be a genuine regression.
+
+### If the baseline still does not match
+
+Report the discrepancy rather than working around it. Do not "fix" tests to make numbers
+line up.
 
 ---
 
@@ -55,7 +82,7 @@ All of the following is implemented, tested, and committed. **Do not rewrite any
 
 | Fact | Value | How it was verified |
 | --- | --- | --- |
-| Test suite | **312 passing, 0 failing** | `python -m pytest tests -q` |
+| Test suite | **312 passing, 0 failing** | `python -m pytest tests -q --basetemp=./.pytest-tmp` |
 | Build checklist (spec §109) | **26 / 26 items pass** | `python scripts/verify_build_checklist.py` |
 | API endpoints implemented | **45** | `app.openapi()["paths"]` |
 | Database tables | **25** | `Base.metadata.tables` |
@@ -90,9 +117,10 @@ All of the following is implemented, tested, and committed. **Do not rewrite any
 | **`apps/web/`** | **EMPTY — YOUR TASK 5** | |
 | **`infra/terraform/`, `infra/monitoring/`, `infra/kubernetes/`** | **EMPTY — YOUR TASK 6 (LOWEST PRIORITY)** | |
 
-### 2.3 Git history (7 commits, all on `main`)
+### 2.3 Git history (9 commits, branch `main`)
 
 ```
+3ff6cdd Add HANDOVER.md for the next engineer
 13bbb51 Observability, Celery workers, seed and replay scripts
 4f4c32a Connectors, golden accounting cases, benchmark and the build checklist
 ef121de API and services: the full upload-to-close workflow
@@ -241,7 +269,7 @@ print('25 tables created')
 "
 
 # 4. Nothing else broke
-python -m pytest tests -q        # MUST still be 312 passed
+python -m pytest tests -q --basetemp=./.pytest-tmp   # MUST still be 312 passed
 python scripts/verify_build_checklist.py   # MUST still be 26/26
 rm -f ./migration-test.sqlite3
 ```
@@ -348,7 +376,7 @@ python -m pip install "ruff>=0.4" "mypy>=1.9" types-PyYAML types-python-dateutil
 ruff format --check .    # must exit 0
 ruff check .             # must exit 0
 mypy apps packages       # must exit 0
-python -m pytest tests -q # must still be 312 passed
+python -m pytest tests -q --basetemp=./.pytest-tmp  # must still be 312 passed
 python -c "
 import yaml, pathlib
 w = yaml.safe_load(pathlib.Path('.github/workflows/ci.yml').read_text(encoding='utf-8'))
@@ -407,7 +435,7 @@ Must contain, marked so they can be deselected in a fast CI run
 ```bash
 python -m pytest tests/security -q          # all must pass
 python -m pytest tests/performance -q       # all must pass
-python -m pytest tests -q                   # total must be > 312 and 0 failures
+python -m pytest tests -q --basetemp=./.pytest-tmp   # total > 312, 0 failures
 ```
 
 **DO NOT:** weaken a security control to make a test pass. If a test fails, you have found
@@ -570,15 +598,16 @@ must paste the **actual terminal output** of its verification commands into your
 **Your final report MUST include, verbatim:**
 
 ```bash
-python -m pytest tests -q | tail -3
+python -m pytest tests -q --basetemp=./.pytest-tmp | tail -3
 python scripts/verify_build_checklist.py | tail -3
+git branch --show-current
 git log --oneline | head -15
 git status --short
 ```
 
 **A task counts as done only if:**
 - Its verification commands exit 0 and you have pasted the output.
-- `python -m pytest tests -q` still shows **0 failures** (the count will rise above 312 once you add Task 4's tests — that is expected and correct).
+- `python -m pytest tests -q --basetemp=./.pytest-tmp` still shows **0 failures** (the count will rise above 312 once you add Task 4's tests — that is expected and correct).
 - `python scripts/verify_build_checklist.py` still shows **26/26**.
 - The work is committed on `main`.
 
@@ -594,7 +623,7 @@ silently narrow the scope.
 cd "C:\Users\13072\Desktop\Finance\AI reconciliation Software"
 
 # Verify the world is sane
-python -m pytest tests -q
+python -m pytest tests -q --basetemp=./.pytest-tmp && rm -rf ./.pytest-tmp
 python scripts/verify_build_checklist.py
 
 # Run one test file
