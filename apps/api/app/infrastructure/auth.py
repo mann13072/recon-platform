@@ -35,7 +35,8 @@ ROLES_CLAIM = "https://recon-platform.example/roles"
 TENANT_CLAIM = "https://recon-platform.example/tenant_id"
 APPROVAL_LIMIT_CLAIM = "https://recon-platform.example/approval_limit"
 
-_LEEWAY_SECONDS = 30
+_JWKS_LEEWAY_SECONDS = 30
+_DEV_LEEWAY_SECONDS = 0
 
 
 class AuthError(Exception):
@@ -78,7 +79,7 @@ class TokenVerifier:
                     algorithms=["RS256", "RS512", "ES256"],
                     audience=self.settings.auth_audience,
                     issuer=self.settings.auth_issuer or None,
-                    leeway=_LEEWAY_SECONDS,
+                    leeway=_JWKS_LEEWAY_SECONDS,
                     options={"require": ["exp", "iat", "sub"]},
                 )
             )
@@ -97,7 +98,7 @@ class TokenVerifier:
                         "require": ["exp", "sub"],
                         "verify_aud": bool(self.settings.auth_audience),
                     },
-                    leeway=_LEEWAY_SECONDS,
+                    leeway=_DEV_LEEWAY_SECONDS,
                 )
             )
         except jwt.PyJWTError as exc:

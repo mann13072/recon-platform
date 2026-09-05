@@ -47,6 +47,9 @@ pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 filterwarnings = ["error::DeprecationWarning:packages.*"]
+markers = [
+    "performance: bounded performance and complexity regression tests",
+]
 
 [tool.ruff]
 line-length = 100
