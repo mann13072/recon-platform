@@ -169,6 +169,51 @@ class TestReproducibility:
         second = eng.run(bank, ledger, context())
         assert first.result_hash == second.result_hash
 
+    def test_two_duplicate_payments_do_not_silently_claim_one_ledger_line(
+        self,
+    ) -> None:
+        """A contested counterparty record must not be auto-matched to either side.
+
+        Two identical bank payments referencing one ledger line is the duplicate
+        payment case from spec section 1.1. Matching either leg would hide the
+        duplicate, and which leg won would depend on input order.
+        """
+        bank = [
+            make_transaction("BANK-1", "500.00", transaction_date=date(2026, 8, 1),
+                             reference="INV-7"),
+            make_transaction("BANK-2", "500.00", transaction_date=date(2026, 8, 1),
+                             reference="INV-7"),
+        ]
+        ledger = [
+            make_transaction("GL-1", "500.00", source_system="ledger",
+                             transaction_date=date(2026, 8, 1), reference="INV-7")
+        ]
+        result = engine().run(bank, ledger, context())
+
+        assert not result.auto_matched, (
+            "a contested ledger line was auto-matched, which would hide a "
+            "duplicate payment"
+        )
+        assert result.stage_stats["exact"].get(
+            "BANK_GL_EXACT_REFERENCE_V3_contested"
+        ) == 2
+
+    def test_contested_records_are_order_independent(self) -> None:
+        bank = [
+            make_transaction("BANK-1", "500.00", transaction_date=date(2026, 8, 1),
+                             reference="INV-7"),
+            make_transaction("BANK-2", "500.00", transaction_date=date(2026, 8, 1),
+                             reference="INV-7"),
+        ]
+        ledger = [
+            make_transaction("GL-1", "500.00", source_system="ledger",
+                             transaction_date=date(2026, 8, 1), reference="INV-7")
+        ]
+        eng = engine()
+        assert eng.run(bank, ledger, context()).result_hash == (
+            eng.run(list(reversed(bank)), ledger, context()).result_hash
+        )
+
     def test_input_order_does_not_change_the_outcome(self) -> None:
         """Ranking must not depend on list order, dict order or set order."""
         bank = [

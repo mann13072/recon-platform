@@ -160,10 +160,11 @@ def _identifier_pair_equal(
 
 @dataclass(frozen=True, slots=True)
 class FeatureWeights:
-    """Weights for the default scorer, in evidence points out of 100.
+    """Weights for the default scorer, in evidence points.
 
-    Identifier evidence dominates. Similarity-only evidence is capped low on
-    purpose: a fuzzy name plus a close amount must never reach the auto-match
+    Each weight is the value of one comparison *when both records carry the
+    field*. Identifier evidence dominates; similarity-only evidence is small on
+    purpose, so a fuzzy name plus a close amount cannot reach the auto-match
     band on its own.
     """
 
@@ -172,38 +173,21 @@ class FeatureWeights:
     reference_exact: float = 35.0
     invoice_exact: float = 35.0
     amount_exact: float = 25.0
-    net_amount_exact: float = 20.0
-    currency_exact: float = 5.0
     description_contains_reference: float = 15.0
     counterparty_exact: float = 10.0
-    reference_similarity: float = 10.0
-    counterparty_similarity: float = 6.0
-    description_similarity: float = 5.0
     date_proximity: float = 10.0
-    amount_proximity: float = 8.0
+    currency_exact: float = 5.0
+    description_similarity: float = 5.0
 
     # Similarity below this contributes nothing; weak signals should not add up
     # into a confident-looking score.
     similarity_floor: float = 0.85
 
-    @property
-    def theoretical_max(self) -> float:
-        return (
-            self.external_id_exact
-            + self.settlement_exact
-            + self.reference_exact
-            + self.invoice_exact
-            + self.amount_exact
-            + self.net_amount_exact
-            + self.currency_exact
-            + self.description_contains_reference
-            + self.counterparty_exact
-            + self.reference_similarity
-            + self.counterparty_similarity
-            + self.description_similarity
-            + self.date_proximity
-            + self.amount_proximity
-        )
+    # Added to the denominator when neither record carries any strong
+    # identifier. Without it, a pair agreeing only on amount and date would
+    # score 1.0 simply because there was nothing else to disagree about.
+    # "Nothing contradicted this" is not the same as "this is proven".
+    no_identifier_penalty: float = 45.0
 
 
 # The evidence needed before a pairing may be considered for auto-match at all:
@@ -249,7 +233,7 @@ class Scorer:
             rule_id: str | None = rule.id
             rule_version: str | None = rule.version
         else:
-            normalized = self._score_with_features(features)
+            normalized = self._score_with_features(features, a, b)
             reasons = build_reasons(features, None, a, b)
             # The default scorer has no measured history, so it never clears the
             # rule-precision gate on its own; it can only produce suggestions.
@@ -321,51 +305,111 @@ class Scorer:
         return True
 
     # -- default feature scoring -------------------------------------------
-    def _score_with_features(self, features: MatchFeatures) -> float:
+    def _score_with_features(
+        self,
+        features: MatchFeatures,
+        a: CanonicalTransaction,
+        b: CanonicalTransaction,
+    ) -> float:
+        """Score as the fraction of *available* evidence that agrees.
+
+        Normalising against the sum of every weight would be wrong: the signals
+        are mutually exclusive in practice, so no real pair can earn them all
+        and every score would be crushed toward zero. Instead a signal only
+        enters the denominator when both records actually carry the field, so
+        the score answers "of what could be compared, how much agreed?".
+
+        A field present on one side and absent on the other is neither evidence
+        for nor against, and is excluded from both sides of the ratio.
+        """
         w = self.weights
-        total = 0.0
+        earned = 0.0
+        available = 0.0
 
-        if features.external_id_exact:
-            total += w.external_id_exact
-        if features.settlement_exact:
-            total += w.settlement_exact
-        if features.reference_exact:
-            total += w.reference_exact
-        if features.invoice_exact:
-            total += w.invoice_exact
-        if features.amount_exact:
-            total += w.amount_exact
-        if features.net_amount_exact:
-            total += w.net_amount_exact
-        if features.currency_exact:
-            total += w.currency_exact
-        if features.description_contains_reference:
-            total += w.description_contains_reference
-        if features.counterparty_exact:
-            total += w.counterparty_exact
+        def weigh(weight: float, comparable: bool, satisfied: float) -> None:
+            nonlocal earned, available
+            if not comparable:
+                return
+            available += weight
+            earned += weight * satisfied
 
-        if not features.reference_exact and features.reference_similarity >= w.similarity_floor:
-            total += w.reference_similarity * features.reference_similarity
-        if (
-            not features.counterparty_exact
-            and features.counterparty_similarity >= w.similarity_floor
-        ):
-            total += w.counterparty_similarity * features.counterparty_similarity
-        if features.description_similarity >= w.similarity_floor:
-            total += w.description_similarity * features.description_similarity
+        weigh(
+            w.external_id_exact,
+            bool(a.external_transaction_id and b.external_transaction_id),
+            1.0 if features.external_id_exact else 0.0,
+        )
+        weigh(
+            w.settlement_exact,
+            bool(
+                (a.settlement_id or a.payout_id or a.batch_id)
+                and (b.settlement_id or b.payout_id or b.batch_id)
+            ),
+            1.0 if features.settlement_exact else 0.0,
+        )
+        weigh(
+            w.reference_exact,
+            bool(a.normalized_reference and b.normalized_reference),
+            1.0
+            if features.reference_exact
+            else (
+                features.reference_similarity
+                if features.reference_similarity >= w.similarity_floor
+                else 0.0
+            ),
+        )
+        weigh(
+            w.invoice_exact,
+            bool(a.normalized_invoice_number and b.normalized_invoice_number),
+            1.0 if features.invoice_exact else 0.0,
+        )
 
-        window = max(self.config.tolerances.date_days, 1)
-        if features.date_distance_days is not None:
-            closeness = max(0.0, 1.0 - (features.date_distance_days / (window + 1)))
-            total += w.date_proximity * closeness
-
-        if not features.amount_exact:
+        # Amount and currency are always comparable: every transaction has them.
+        amount_satisfied = 1.0 if features.amount_exact or features.net_amount_exact else 0.0
+        if amount_satisfied == 0.0:
             limit = self.config.tolerances.max_amount_difference
             if limit > 0 and features.amount_difference <= limit:
-                closeness = 1.0 - float(features.amount_difference / limit)
-                total += w.amount_proximity * closeness
+                amount_satisfied = 1.0 - float(features.amount_difference / limit)
+        weigh(w.amount_exact, True, amount_satisfied)
+        weigh(w.currency_exact, True, 1.0 if features.currency_exact else 0.0)
 
-        return total / w.theoretical_max
+        weigh(
+            w.counterparty_exact,
+            bool(a.normalized_counterparty and b.normalized_counterparty),
+            1.0
+            if features.counterparty_exact
+            else (
+                features.counterparty_similarity
+                if features.counterparty_similarity >= w.similarity_floor
+                else 0.0
+            ),
+        )
+        weigh(
+            w.description_similarity,
+            bool(a.normalized_description and b.normalized_description),
+            features.description_similarity
+            if features.description_similarity >= w.similarity_floor
+            else 0.0,
+        )
+
+        window = max(self.config.tolerances.date_days, 1)
+        weigh(
+            w.date_proximity,
+            features.date_distance_days is not None,
+            max(0.0, 1.0 - ((features.date_distance_days or 0) / (window + 1))),
+        )
+
+        # An identifier found inside the other side's narrative is pure upside:
+        # it is only ever evidence for, never against.
+        if features.description_contains_reference:
+            earned += w.description_contains_reference
+            available += w.description_contains_reference
+
+        if not has_strong_identifier(features):
+            available += w.no_identifier_penalty
+
+        if available <= 0:
+            return 0.0
+        return earned / available
 
 
 def has_strong_identifier(features: MatchFeatures) -> bool:

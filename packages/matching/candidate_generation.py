@@ -165,6 +165,13 @@ class CandidateGenerator:
     config: ReconciliationConfig
     eligibility: EligibilityConfig
     max_candidates_per_transaction: int = 50
+    max_amount_band_units: int = 10_000
+    """Widest amount band, in minor units, that will be walked bucket by bucket.
+    10,000 units is EUR 100.00 - comfortably above any sane matching tolerance."""
+
+    clamped_lookups: int = 0
+    """How often a configured tolerance exceeded the band and the amount index
+    was skipped. Surfaced in run stats so an unusable tolerance is visible."""
 
     @classmethod
     def for_config(cls, config: ReconciliationConfig) -> CandidateGenerator:
@@ -264,27 +271,32 @@ class CandidateGenerator:
     ) -> list[CanonicalTransaction]:
         """Side-B transactions whose amount is within the absolute tolerance.
 
-        The bucket is keyed on integer minor units, so the scan is over the
-        exact tolerance band and nothing else.
+        The bucket is keyed on integer minor units, so the walk covers exactly
+        the configured tolerance band and nothing else.
+
+        A very wide band would turn the walk into a full scan. Rather than
+        narrowing the tenant's configured tolerance silently, the band is walked
+        in full up to :attr:`max_amount_band_units`; past that the walk is
+        skipped entirely and recorded in ``self.clamped_lookups``, because a
+        tolerance that wide is a configuration problem the user should see, not
+        one the engine should quietly reinterpret. Pairs sharing any identifier
+        are still found through the other blocking indexes regardless.
         """
         currency = a.currency
         centre = minor_units(a.amount, currency)
         span = minor_units(self.eligibility.max_amount_difference, currency)
 
-        # A wide tolerance band would turn this into a scan. Beyond a few
-        # hundred minor units it is cheaper and safer to require another key.
-        if span > 500:
-            span = 500
+        if span > self.max_amount_band_units:
+            self.clamped_lookups += 1
+            return []
 
         result: list[CanonicalTransaction] = []
         for offset in range(-span, span + 1):
             result.extend(index.by_amount_bucket.get((currency, centre + offset), []))
 
-        if self.eligibility.allow_fx:
-            for other_currency, bucket_value in list(index.by_amount_bucket):
-                if other_currency == currency:
-                    continue
-                del bucket_value  # keys only; FX pairs need explicit rate rules
+        # FX pairs are deliberately not generated from amount proximity: a
+        # cross-currency candidate needs an explicit rate rule (spec section 66),
+        # not a wider tolerance.
         return result
 
 

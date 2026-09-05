@@ -182,10 +182,21 @@ def _run_rule_stage(
 ) -> StageResult:
     """Run a list of rules in order, consuming transactions as they match.
 
-    A rule only creates a match when it produces exactly one candidate for the
-    anchor. Ambiguity is deferred to the scoring stages rather than resolved by
-    rule order, which would otherwise make the result depend on how the rules
-    happen to be sorted.
+    Each rule runs in two passes, and the second pass is the important one.
+
+    *Pass 1* collects, for every unconsumed anchor, the set of counterparty
+    records that satisfy the rule. An anchor with more than one hit is
+    *forward-ambiguous* and is left for the scoring stages.
+
+    *Pass 2* inverts that map. A counterparty record claimed by more than one
+    anchor is *reverse-ambiguous*, and none of the claiming anchors may match
+    it. Two identical payments competing for one ledger line is precisely the
+    duplicate-payment case the spec warns about (section 1.1): matching either
+    one would hide the duplicate and would silently depend on input order.
+
+    Deciding both directions before consuming anything is also what makes the
+    stage order-independent: a greedy single pass would let whichever anchor
+    happened to come first in the list win.
     """
     remaining_a = list(side_a)
     remaining_b = list(side_b)
@@ -194,13 +205,20 @@ def _run_rule_stage(
     matches: list[MatchGroup] = []
     stats: dict[str, int] = {}
 
+    def bump(key: str, amount: int = 1) -> None:
+        stats[key] = stats.get(key, 0) + amount
+
     for rule in rules:
         available_b = [tx for tx in remaining_b if tx.id not in consumed_b]
         if not available_b:
             break
         index = BlockingIndex.build(available_b)
         generator = CandidateGenerator.for_config(config)
-        rule_matches = 0
+        require_unique_for_rule = require_unique and rule.risk.require_unique_candidate
+
+        # -- pass 1: what does each anchor want? ---------------------------
+        proposals: dict[UUID, tuple[CanonicalTransaction, CanonicalTransaction, ScoredCandidate]] = {}
+        claims: dict[UUID, list[UUID]] = {}
 
         for a in remaining_a:
             if a.id in consumed_a:
@@ -237,15 +255,34 @@ def _run_rule_stage(
             if not hits:
                 continue
 
-            if require_unique and rule.risk.require_unique_candidate and len(hits) > 1:
-                # Two records satisfy the rule equally. This is exactly the case
-                # the spec says must not auto-match; leave both for scoring.
-                stats[f"{rule.versioned_id}_ambiguous"] = (
-                    stats.get(f"{rule.versioned_id}_ambiguous", 0) + 1
-                )
+            if require_unique_for_rule and len(hits) > 1:
+                # Two records satisfy the rule equally for this anchor. Exactly
+                # the case the spec says must not auto-match; leave it to scoring.
+                bump(f"{rule.versioned_id}_ambiguous")
                 continue
 
             b, scored = hits[0]
+            proposals[a.id] = (a, b, scored)
+            claims.setdefault(b.id, []).append(a.id)
+
+        # -- pass 2: resolve contention, then consume ----------------------
+        contested_b = {
+            b_id for b_id, anchors in claims.items() if len(anchors) > 1
+        }
+        if contested_b:
+            bump(
+                f"{rule.versioned_id}_contested",
+                sum(len(claims[b_id]) for b_id in contested_b),
+            )
+
+        rule_matches = 0
+        # Sort by anchor id so the emitted order does not depend on the input
+        # list order either.
+        for anchor_id in sorted(proposals, key=str):
+            a, b, scored = proposals[anchor_id]
+            if require_unique_for_rule and b.id in contested_b:
+                continue
+
             auto = scored.score * 100 >= rule.decision.auto_match_min_score
             if rule.risk.max_auto_match_amount is not None:
                 auto = auto and abs(a.amount) <= rule.risk.max_auto_match_amount
@@ -259,7 +296,9 @@ def _run_rule_stage(
                     scored=scored,
                     stage=stage,
                     status=(
-                        MatchGroupStatus.AUTO_APPROVED if auto else MatchGroupStatus.SUGGESTED
+                        MatchGroupStatus.AUTO_APPROVED
+                        if auto
+                        else MatchGroupStatus.SUGGESTED
                     ),
                     decision=(
                         DecisionOutcome.AUTO_MATCH if auto else DecisionOutcome.SUGGEST
@@ -272,7 +311,7 @@ def _run_rule_stage(
             rule_matches += 1
 
         if rule_matches:
-            stats[rule.versioned_id] = rule_matches
+            bump(rule.versioned_id, rule_matches)
 
     return StageResult(
         matches=matches,

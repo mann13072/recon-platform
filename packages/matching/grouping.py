@@ -254,9 +254,16 @@ class GroupMatcher:
                 stats["budget_exhausted"] += 1
                 continue
 
-            # Groups of one are 1:1 matches; ignore them at this stage.
+            # A single pool record that equals the anchor is a 1:1 match, not a
+            # group. If one exists alongside a multi-record solution, there are
+            # two competing explanations for the same amount and neither may be
+            # applied here - grouping must not quietly outrank an exact pairing.
+            singles = [s for s in search.solutions if len(s) == 1]
             real = [s for s in search.solutions if len(s) >= 2]
             if not real:
+                continue
+            if singles:
+                stats["ambiguous"] += 1
                 continue
             if grouping.require_unique_solution and len(real) > 1:
                 stats["ambiguous"] += 1
