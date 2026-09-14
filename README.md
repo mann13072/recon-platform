@@ -1,5 +1,9 @@
 # recon-platform
 
+> **Author:** [Mann D. Shah](https://github.com/mann13072) · Financial Controller & Systems Architect  
+> **Portfolio & Related Repositories:** [SolarChain Twin](https://github.com/mann13072/Supply-chain-SIMulator-main) · [NordWerk Close Lab](https://github.com/mann13072/nordwerk-close-lab) · [Cash-Flow Risk Simulator](https://github.com/mann13072/project-cash-flow-risk-simulator) · [Full Portfolio](https://github.com/mann13072)
+
+
 An AI-assisted financial reconciliation platform.
 
 **Design principle: deterministic accounting logic first. AI assists ambiguity; it does not own financial truth.**
